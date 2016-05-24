@@ -18,4 +18,4 @@ In general, changes should not be made to the content of the RFC once it has mov
 
 ### Feedback
 
-Feedback to the Architecture is welcome and expected! Send any comments or feedback to [basho-arch@basho.com](mailto:basho-arch@basho.com)
+Feedback to the Architecture team is welcome and expected! Send any comments or feedback to [arch@basho.com](mailto:arch@basho.com)
