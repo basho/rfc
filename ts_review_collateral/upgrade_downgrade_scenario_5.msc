@@ -12,11 +12,11 @@ msc {
 
 	// declare objects
 	// This is a cluster with 3 nodes for exposition purposes
-	"V2 Client", "V1 Node 2", "V2 Node 1", "V1 Node 3";
-
-	"V1 Node 2" => "V1 Node 2" [label="Register Capabilities"];
+	"V2 Node 1", "V1 Node 2", "V1 Node 3";
 
 	"V2 Node 1" => "V2 Node 1" [label="Register Capabilities"];
+
+	"V1 Node 2" => "V1 Node 2" [label="Register Capabilities"];
 
 	"V1 Node 3" => "V1 Node 3" [label="Register Capabilities"];
 
@@ -40,30 +40,14 @@ msc {
 
     |||;
 
-	"V1 Node 2" note "V2 Node 1" [label="\nExisting Feature Path\n", textcolor=blue];
+	"V2 Node 1" => "V2 Node 1" [label="New Implementation Of Existing User Feature"];
 
-	"V2 Client" -> "V1 Node 2" [label="Use V1 Feature"];
+	"V2 Node 1" => "V2 Node 1" [label="Check Capabilities"];
 
-	"V1 Node 2" => "V1 Node 2" [label="Check Capabilities"];
+	"V2 Node 1" => "V2 Node 1" [label="Output V1 data format"];
 
-	"V1 Node 2" => "V1 Node 2" [label="Output V1 data format"];
+	"V2 Node 1" -> "V1 Node 2" [label="Use V1 data format"];
 
-	"V1 Node 2" -> "V2 Node 1" [label="Use V1 data format"];
-
-	"V1 Node 2" -> "V1 Node 3" [label="Use V1 data format"];
-
-    ...;
-
-    |||;
-
-    ---;
-
-    |||;
-
-	"V1 Node 2" note "V2 Node 1" [label="\nError Path\n", textcolor=blue];
-
-	"V2 Client" -> "V1 Node 2" [label="Use V2 Feature"];
-
-	"V1 Node 2" ->   "V2 Client" [label="Error Message"];
+	"V2 Node 1" -> "V1 Node 3" [label="Use V1 data format"];
 
 }

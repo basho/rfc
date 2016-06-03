@@ -23,12 +23,20 @@ msc {
     ...;
 
     |||;
+    
+    ---;
+
+    |||;
 
     "V2 Node 1" box "V2 Node 1" [label="\nCapabilities are gossiped about\n"],
     "V1 Node 2" box "V1 Node 2" [label="\nCapabilities are gossiped about\n"],
     "V1 Node 3" box "V1 Node 3" [label="\nCapabilities are gossiped about\n"];
 
     ...;
+
+    |||;
+
+    ---;
 
     |||;
 

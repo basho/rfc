@@ -24,11 +24,19 @@ msc {
 
     |||;
 
-    "V2 Node 1" note "V2 Node 1" [label="\nCapabilities are gossiped about\n"],
+   ---;
+
+    |||;
+
+ "V2 Node 1" note "V2 Node 1" [label="\nCapabilities are gossiped about\n"],
     "V1 Node 2" note "V1 Node 2" [label="\nCapabilities are gossiped about\n"],
     "V1 Node 3" note "V1 Node 3" [label="\nCapabilities are gossiped about\n"];
 
 	...;
+
+    |||;
+
+    ---;
 
     |||;
 
@@ -48,6 +56,10 @@ msc {
 
     |||;
 
+    ---;
+
+    |||;
+
 	"V2 Node 1" note "V2 Node 1" [label="\nNo Downgrade Path\n", textcolor=blue];
 
 	"V2 Client" ->   "V2 Node 1" [label="Use V2 Feature"];
@@ -59,6 +71,10 @@ msc {
 	"V2 Node 1" ->   "V2 Client" [label="Error Message"];
 
 	...;
+
+    |||;
+
+    ---;
 
     |||;
 
