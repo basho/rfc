@@ -1,6 +1,9 @@
 # Simplified Documentation
   
 ### Gordon Guthrie
+
+**Note**: this is a presentation in markdown - if you wish to run it please go to:
+![Remark Js](http://remarkjs.com/remarkise)
   
 ---
   
