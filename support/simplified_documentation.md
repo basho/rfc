@@ -93,7 +93,7 @@ The product spec MUST be of a quality to be used:
 * to be used in training
 * to design the technical implementation
 
-##### write once, _end the what's in-what's out dance_
+### write once, _end the what's in-what's out dance_
 
 ---
 
@@ -228,6 +228,7 @@ RFC 2119
 https://www.ietf.org/rfc/rfc2119.txt
 
 The technical spec MUST be of a quality to:
+
 * be reviewable against the product spec
 * specify the design clearly
 * be used in training for CSEs/SAs
