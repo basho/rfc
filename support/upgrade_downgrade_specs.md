@@ -56,11 +56,15 @@ This scenario shows when a new client is used to connect to a new node in a mixe
 
 ![Upgrade Downgrade Scenario 2](upgrade_downgrade_scenario_2.png)
 
+**NOTE**: because SQL commands are plain text - it is possible for old clients to **post commands from the future**
+
 ### Scenario 3
 
 An old client connects to a old node in a mixed cluster.
 
 ![Upgrade Downgrade Scenario 3](upgrade_downgrade_scenario_3.png)
+
+**NOTE**: because SQL commands are plain text - it is possible for old clients to **post commands from the future**
 
 ### Scenario 4
 
@@ -78,6 +82,8 @@ A new internal wire format is introduced for inter-node communications. In this 
 
 ![Upgrade Downgrade Scenario 5](upgrade_downgrade_scenario_5.png)
 
+**Note**: this scenario is for non-client facing changes only
+
 # Upgrade Of Node Over Persisted Data
 
 ## Scenario 6
@@ -85,6 +91,11 @@ A new internal wire format is introduced for inter-node communications. In this 
 In this scenario data is written to disk in Version 1 of the software, and the node is upgraded or downgraded in place, and the new software attempts to read the persisted data.
 
 ![Upgrade Downgrade Scenario 6](upgrade_downgrade_scenario_6.png)
+
+**Note**: this **MUST** be considered from 3 perspectives:
+* data written to Riak
+* AAE derived from the persisted data
+* metadata written elsewhere, eg Riak Core, DDL beam files, etc, etc
 
 ## Scenario 7
 
@@ -97,10 +108,30 @@ Especial consideration needs to be given to maintenance systems that access the 
 
 ![Upgrade Downgrade Scenario 7](upgrade_downgrade_scenario_7.png)
 
-## Scenario 8
+**Note**: this **MUST** be considered from 3 perspectives:
+* data written to Riak
+* AAE derived from the persisted data
+* metadata written elsewhere, eg Riak Core, DDL beam files, etc, etc
+
+**Note**: only if this scenario fails should you consider Scenario 8
+
+**Note**: in this scenario the new features MUST be separately enabled from a command line tool and the CLI MUST tell users that if they switch this feature on there is no going back... The proposal for this scenario MUST be reviewed by the CSE team
+
+## Scenario 8 - (the bad scenario, don't do it!)
 
 In scenario the data on disk needs to be converted back to V1. This is deeply unadvisable - but may be appropriate for low data volumes - eg meta data or other other things in riak core.
 
 In this scenario the vnode is stopped, the data is transformed in situ and the old version is started.
 
 ![Upgrade Downgrade Scenario 8](upgrade_downgrade_scenario_8.png)
+
+**Note**: this **MUST** be considered from 3 perspectives:
+* data written to Riak
+* AAE derived from the persisted data
+* **SOME** metadata written elsewhere, eg DDL beam files, etc, etc
+
+Metadata written to Riak Core **MUST** be immutable and not rewritten
+
+**Note**: this should only be considered if Scenario 7 cannot be implemented
+
+**Note**: the proposal for this scenario MUST be reviewed by the CSE team
