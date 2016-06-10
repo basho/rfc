@@ -1,4 +1,4 @@
-// Diagram for groupby_coordinator.md
+// Diagram for groupby_vnode.md
 //
 // SQL GROUP BY where the coordinator performs the row grouping.
 //

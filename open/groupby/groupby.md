@@ -10,7 +10,7 @@
 
 ### Definition
 
-`GROUP BY` returns a single row for each unique combination of values for columns specified in the `GROUP BY` clause.  The `SELECT` clause for queries that use `GROUP BY` can contain only the columns in the `GROUP BY` and aggreagate functions. Columns not used as groups can appear as function parameters.
+`GROUP BY` returns a single row for each unique combination of values for columns specified in the `GROUP BY` clause.  The `SELECT` clause for queries that use `GROUP BY` can contain only the columns in the `GROUP BY` and aggregate functions. Columns not used as groups can appear as function parameters.
 
 The following table defines a schema for tasks, which project they are part of and when they were completed.
 
@@ -62,7 +62,7 @@ There is no guaranteed order for rows returned by `GROUP BY`, `ORDER BY` provide
 
 ### Technical Documentation
 
-`GROUP BY` can be described as a dictionary of aggregates. When no `GROUP BY` is specified but an aggregate function is only one row is returned, for example:
+`GROUP BY` can be described as a dictionary of aggregates. When no `GROUP BY` is specified but an aggregate function is, only one row is returned. For example:
 
 ```sql
 SELECT COUNT(project)
@@ -70,11 +70,11 @@ FROM table1
 GROUP BY project
 ```
 
-When a `GROUP BY` is specified, one aggregate is returned per group. Internally the coordinator maintains a dict is used, the key is the group by values and the value is the aggregate.
+When a `GROUP BY` is specified, one aggregate is returned per group. Internally the coordinator maintains a dictionary is used, the key is the group by values and the value is the aggregate.
 
 ![GROUP BY Sequence Diagram](groupby_coordinator.png)
 
-For each row that in the result set the coordinator must:
+For each row in the result set, the coordinator must:
 
 1. Fetch the `GROUP BY` key from the row cells.
 2. Lookup the group's aggregate in the dictionary using the key.
