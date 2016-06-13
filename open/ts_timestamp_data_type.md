@@ -2,9 +2,11 @@
 
 ### Abstract
 
-To make it simpler for users of the Riak shell to add new entries and
-query existing data, it is desirable to parse date strings into UTC
-time integers.
+Strict compliance with the SQL standard brings with it a suboptimal
+interface for users and extra work for us. I propose that we go with a
+more sensible alternative: support time zones in date strings,
+always. Users would not have to specify a time zone, but would always
+have the option of doing so.
 
 ### Out of scope for this document
 
