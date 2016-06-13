@@ -8,10 +8,100 @@ Could the following people please review this document:
 
 # RDF: Query buffers, temporary tables and snapshots
 
-## Abstract
+# Indicative Road Map for temporary tables in Riak TS
+
+## Introduction
+
+This proposal under discussion has arisen from the design work for adding the `LIMIT` and `ORDER BY` clauses to the query system.
+
+The required work starts putting place infrastructure that will potentially be useful for the query system in a number of ways.
+
+## Background
+
+Up til now the product process for TS has been uni-directional
+
+```
+Clients ----------> Product Team ----------> Engineering
+         inchoate                priorities
+          wishes
+```
+
+This product feature requires that feedback loop to close
+```
+Clients ----------> Product Team ----------> Engineering
+         inchoate                priorities       |
+          wishes                                  | new
+                                                  | opportunities
+                                                  |
+Clients <---------- Product Team <----------------+
+            seek                     tease out
+          feedback
+```
+
+## The Engineering View
+
+There is a ladder of potential opportunities now visible as a result of this work. Not all the opportunities are currently realisable - they would need:
+
+* further thinking and prototyping
+* training/reskilling due to recent loss of expertise
+* etc, etc
+
+This introduction will describe the 'opportunity ladder' on the basis of Gall's Law
+
+> Any sufficiently complex working system evolves from a simpler working system
+
+### Step 1
+
+Temporary tables are created for the lifetime of queries to do `LIMIT` and `ORDER BY` operations - and `GROUP BY` as appropriate.
+
+Temporary tables reside on the co-ordinating node, and have no replicas, nor AAE or MDC or anything else.
+
+The number of temporary tables is restricted per node, as is the total disk storage all running queries can use.
+
+The client's get the results of these queries streamed to them, when the stream completes the temporary table for the query is dropped and the space freed up.
+
+### Step 2
+
+Snapshot tables are created against which paged queries can be run. A temporary snapshot tables is created when the paged query is first run, and re-used on subsequent page requests.. These temporary tables are `snapshot` tables - created at a point in time - and they do not update.
+
+The number of snapshot tables is restricted per node, as is the total disk storage all running queries can use - this may be a single restriction for temporary and snapshot tables, or they may have separate limits.
+
+The snapshot tables must be explicitly dropped for the resources/diskspace to be released. The ONLY keyword will be part of this process - and probably an explicit clean up command.
+
+Snapshot tables reside on the co-ordinating node, and have no replicas, nor AAE or MDC or anything else.
+
+### Step 3
+
+Temporary tables are created against which queries can be run using the `INSERT INTO' SQL syntax. These temporary tables are explicitly created and deleted. They are `snapshot` tables - created at a point in time - and they do not update.
+
+Users can write arbitrary queries against the snapshot tables and have programmatic access to the table definitions.
+
+The number of snapshot tables is restricted per node, as is the total disk storage all running queries can use - this may be a single restriction for temporary and snapshot tables, or they may have separate limits.
+
+The temporary tables must be explicitly dropped for the resources/diskspace to be released.
+
+Snapshot tables reside on the co-ordinating node, and have no replicas, nor AAE or MDC or anything else.
+
+### Step 4
+
+At this point is all gets a bit fuzzier. A range of options (not all necessarily compatible) become available.
+
+Temporary tables become materialised views - when you write to the main table the query view gets the data and updates itself as well.
+
+Temporary tables stop being per-co-ordinating node and instead are just normal TS tables...
+
+Before we can even start thinking about Step 4 the TS team needs to step up its Dist Sys game by an extensive training programme because frankly we will be out of our depth in the design and architecture of this as we currently stand.
+
+## The Current Proposals
+
+The current architectural proposals are at a Step 2 level. 
+
+---
+
+# Abstract
 
 This is an RFC for (a) temporary query buffers, a means to deal with
-arbitrarliy big queries that would otherwise result in OOM conditions
+arbitrarily big queries that would otherwise result in OOM conditions
 on the query coordinator node, and (b) snapshots, or static views of a
 SELECT query, which are, technically, named and persistent, node-local
 query buffers.
