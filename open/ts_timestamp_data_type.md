@@ -88,5 +88,5 @@ Capability addresses #2, probably #1 as well.
 
 ### References
 
-- [https://www.dropbox.com/s/y55gz6060acd3qr/sql%20foundation.pdf?dl=0](PDF version of SQL standard.) Huge, download at your own risk.
-- [https://github.com/basho/riak/wiki/Time-date-processing-for-riak_ts](Time date processing for riak_ts)
+- [PDF version of SQL standard.](https://www.dropbox.com/s/y55gz6060acd3qr/sql%20foundation.pdf?dl=0) Huge, download at your own risk.
+- [Time date processing for riak_ts](https://github.com/basho/riak/wiki/Time-date-processing-for-riak_ts)
