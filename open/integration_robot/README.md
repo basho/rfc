@@ -33,7 +33,6 @@ We propose to build an integration robot to perform the operations on pull reque
  - IF it fails, mark build as failed, update Github PR comment with status of failure.
 - **TEST** the branch with unit tests.
  - IF it fails, mark the build as failed, update Github PR comment with status of failure.
-
 - **PASS**: Merge, Build and Tests all pass, system merges working integration branch to target branch. 
  - System updates Github PR comment with status of success and closes PR
 
