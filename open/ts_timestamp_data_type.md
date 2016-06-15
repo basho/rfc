@@ -64,7 +64,7 @@ select * from ts1 where a = 'fizzbang'
 
 select * from ts1 where a = 'fizzbang'
                     and time > timestamp '2016-06-01T15:30:00Z'
-                    and time < timestamp '2016-06-01T15:30:00Z';
+                    and time < timestamp '2016-06-01T16:30:00Z';
 ```
 
 Using `timestamp` as an explicit type prefix in a query is supported
@@ -83,11 +83,11 @@ an error.
 ```
 select * from ts1 where a = 'fizzbang'
                     and time > '2016-06-01T15:30:00'
-                    and time < '2016-06-01T15:30:00';
+                    and time < '2016-06-01T16:30:00';
 
 select * from ts1 where a = 'fizzbang'
                     and time > timestamp '2016-06-01T15:30:00'
-                    and time < timestamp '2016-06-01T15:30:00';
+                    and time < timestamp '2016-06-01T16:30:00';
 ```
 
 With no time zone indicator, the local time zone is assumed.
