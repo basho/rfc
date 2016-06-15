@@ -52,7 +52,7 @@ We propose to build an integration robot to perform the operations on pull reque
 #### Stories
 - As a user, I should be able to set the default required reviewer count in a config file
 - As a user, I should be able to 
-- 
+
 
 ### References
 
