@@ -26,16 +26,16 @@ We propose to build an integration robot to perform the operations on pull reque
 #### Minimum requirements
 
 - **REVIEW**: When a push is made to a pull request branch, it should be evaluated against a default set of rules:
--  IF PR is reviewed by at least 2 people that aren't the author, continue.
+ -  IF PR is reviewed by at least 2 people that aren't the author, continue.
 - **MERGE**: An integration branch is created and a rebase is performed of the pr branch onto the target
-- IF it fails, mark the build as failed, update Github PR comment with status of failure.
+ - IF it fails, mark the build as failed, update Github PR comment with status of failure.
 - **BUILD** the branch
-- IF it fails, mark build as failed, update Github PR comment with status of failure.
+ - IF it fails, mark build as failed, update Github PR comment with status of failure.
 - **TEST** the branch with unit tests.
-- IF it fails, mark the build as failed, update Github PR comment with status of failure.
+ - IF it fails, mark the build as failed, update Github PR comment with status of failure.
 
 - **PASS**: Merge, Build and Tests all pass, system merges working integration branch to target branch. 
-- System updates Github PR comment with status of success and closes PR
+ - System updates Github PR comment with status of success and closes PR
 
 #### Implementation 
 
