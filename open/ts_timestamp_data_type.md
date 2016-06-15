@@ -38,6 +38,60 @@ allow users to specify time zones in queries.
 Our working assumption is that users do in fact want to be able to
 specify time zones rather than have them silently or noisily ignored.
 
+### Examples of new keywords, features
+
+#### Table creation
+```
+create table ts1 ( time timestamp with time zone not null,
+                   a varchar not null,
+                   primary key ((a, quantum(time, 15, 's')), a, time));
+create table ts2 ( time timestamp without time zone not null,
+                   a varchar not null,
+                   primary key ((a, quantum(time, 15, 's')), a, time));
+```
+
+Note that `with/without time zone` will not be required, but we must
+choose a default for the basic `timestamp` type.
+
+#### Queries
+
+##### Explicit time zones
+
+```
+select * from ts1 where a = 'fizzbang'
+                    and time > '2016-06-01T15:30:00+05'
+                    and time < '2016-06-01T16:30:00+05';
+
+select * from ts1 where a = 'fizzbang'
+                    and time > timestamp '2016-06-01T15:30:00Z'
+                    and time < timestamp '2016-06-01T15:30:00Z';
+```
+
+Using `timestamp` as an explicit type prefix in a query is supported
+but not required, per my experimentation and reading, although I have
+not seen the details explicitly referenced in the SQL standard.
+
+Using `Z` at the end of a time/date string means this is UTC time (aka
+a zero offset). `+00` (or `+00:00` or `+0000`) is equivalent, but
+`-00` et al are not.
+
+None of the above is allowed when the type is `timestamp without time
+zone`. Postgres ignores the time zone indicator, while MySQL returns
+an error.
+
+##### Implicit time zone
+```
+select * from ts1 where a = 'fizzbang'
+                    and time > '2016-06-01T15:30:00'
+                    and time < '2016-06-01T15:30:00';
+
+select * from ts1 where a = 'fizzbang'
+                    and time > timestamp '2016-06-01T15:30:00'
+                    and time < timestamp '2016-06-01T15:30:00';
+```
+
+With no time zone indicator, the local time zone is assumed.
+
 ### Proposal
 
 If we can set aside our insistence on a "strict" SQL subset, we can
@@ -90,3 +144,4 @@ Capability addresses #2, probably #1 as well.
 
 - [PDF version of SQL standard.](https://www.dropbox.com/s/y55gz6060acd3qr/sql%20foundation.pdf?dl=0) Huge, download at your own risk.
 - [Time date processing for riak_ts](https://github.com/basho/riak/wiki/Time-date-processing-for-riak_ts)
+- [ISO 8601 (Wikipedia)](https://en.wikipedia.org/wiki/ISO_8601)
