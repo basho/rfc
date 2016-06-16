@@ -8,6 +8,14 @@ more sensible alternative: support time zones in date strings,
 always. Users would not have to specify a time zone, but would always
 have the option of doing so.
 
+### Local time zone
+
+Throughout this document, wherever I refer to "local" time zone, I am
+referring to the Riak server where the request is parsed. There is
+no way today for the client to express its time zone, and we do not
+have a way to specify a time zone cluster-wide or per-table, although
+both ideas have merit.
+
 ### Out of scope for this document
 
 * Date formats
