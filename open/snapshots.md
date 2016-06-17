@@ -161,11 +161,11 @@ concept of localized, volatile (gasp!) data in Riak TS.
 
 3. Unlike query buffers, snapshots:
 
-    * are assigned an *identifier* by which they can be accessed by
+    * are assigned an **identifier** by which they can be accessed by
       local clients via normal queries, just as normal TS tables
       are;
 
-    * have no *expiry time* and are only dropped by an explicit DROP
+    * have no **expiry time** and are only dropped by an explicit DROP
       TABLE statement.
 
     * are created explicitly.

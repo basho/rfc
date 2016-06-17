@@ -6,7 +6,7 @@ Could the following people please review this document:
  - [ ] @russelldb
  - [ ] @paegun
 
-# RDF: Query buffers, aka temporary tables
+# RFC: Query buffers, aka temporary tables
 
 # Abstract
 
@@ -32,7 +32,7 @@ data in order to (a) sort the result by the field specified in the
 ORDER BY clause, and only then (b) count the number of records as
 specified by the LIMIT clause.
 
-The LIMIT clause is about the *number* of records and their position
+The LIMIT clause is about the **number** of records and their **position**
 relative to the start or end of the scan range, rather than the
 records with interesting fields falling within a certain range.
 Unlike other databases, Riak TS requires the client to specify the
@@ -48,30 +48,30 @@ very end of the WHERE range).
 ### Overview
 
 1. Query buffers will contain the rows selected by a SELECT query, in
-   a temporary *disk-backed storage*.
+   a temporary **disk-backed storage**.
 
 2. Query buffers will be automatically enabled for queries having a
    LIMIT or ORDER BY clause.
 
-2. Data are stored in a *separate, isolated instance of eleveldb*
-   *running colocally with the coordinator*.
+2. Data are stored in a **separate, isolated instance of eleveldb**
+   running **colocally with the coordinator**.
 
 3. In order to support paging (with follow-up queries), the data in
-   query buffers are *persisted across queries*.  Query buffers are
+   query buffers are **persisted across queries**.  Query buffers are
    automatically dropped after a certain, configurable, amount of time
    has elapsed since they were last accessed.
 
 4. Records are inserted into query buffers such that the table
-   *natural order* is consistent with the ORDER BY clause.
+   **natural order** is consistent with the ORDER BY clause.
 
 5. Operations on query buffers can be represented in equivalent
-   *formal, standard SQL*.  Query buffer tables will have a *schema*.
+   **formal, standard SQL**.  Query buffer tables will have a **schema**.
 
-6. Query buffers contain the data existing in the underlying table *at
-   the moment of query execution*, and do not reflect any updates that
-   the table may receive since.
+6. Query buffers contain the data existing in the underlying table
+   **at the moment of query execution**, and do not reflect any
+   updates that the table may have received since.
 
-7. Query buffers are *not specific to a connection or clent* by which
+7. Query buffers are **not specific to a connection or clent** by which
    the original initial query has been received.
 
 8. Query buffers are only accessible from the physical node they
@@ -82,30 +82,31 @@ very end of the WHERE range).
 
 1. Although they have some aspects of cache semantics, query buffers
    should not be used as cache because there is no mechanism to
-   propagate changes eventually done to affected rows in the
+   propagate changes eventually done to the affected rows in the
    underlying table after the query buffers were created.  Similarly,
-   no attempt is made to check the data, once collected in query
+   no attempt is made to check that the data, once collected in query
    buffers, continue to exist in the underlying table.
 
 2. Query buffers are not "materialized views", in that they cannot be
    accessed by arbitrary queries but only those which have the same
-   query hash and thus qualify as "follow-up queries".  Snapshots,
-   offered for review as a separate RFC, have this semantics.
+   query hash and thus qualify as "follow-up queries" (see below).
+   Snapshots, on the other hand, offered for review as a separate RFC,
+   will have this semantics.
 
 
 ### Changes to external API
 
 1. Any SELECT query with a LIMIT or ORDER BY clause will have a query
    buffer automatically set up and associated with it.  It becomes an
-   *initial query*.
+   **initial query**.
 
-2. Unless the initial query has a newly proposed *ONLY keyword*, its
+2. Unless the initial query has a newly proposed **ONLY keyword**, its
    query buffer becomes available for follow-up queries (see below).
 
 3. A follow-up query with an ONLY keyword will cause the associated
    query buffer to be dropped.
 
-4. Clients will be able to set an *expiry timeout* for query buffers,
+4. Clients will be able to set an **expiry timeout** for query buffers,
    in a new optional field in the `tsqueryreq` message.
 
 
@@ -114,12 +115,12 @@ very end of the WHERE range).
 1. Regular, non-streaming queries with an ORDER BY clause are eligible
    for query buffers.
 
-2. *Follow-up queries* are those which have SELECT, FROM, WHERE, GROUP
+2. **Follow-up queries** are those which have SELECT, FROM, WHERE, GROUP
    BY and ORDER BY expressions identical with some previously issued
    query (which is then called "initial query" in relation to those
    following it).
 
-3. A *query hash* can be computed for a query, which shall be the same
+3. A **query hash** can be computed for a query, which shall be the same
    for any two queries related to each other as initial and follow-up,
    and unique otherwise.
 
@@ -162,7 +163,7 @@ very end of the WHERE range).
 
 #### GROUP BY
 
-ORDER BY is executed *after* GROUP BY, which means that all rows have
+ORDER BY is executed **after** GROUP BY, which means that all rows have
 to be grouped before an ORDER BY key is created.  The temp tables do
 not do group by on their own; instead, grouping is done in the
 `qry_worker` and then put in the temporary table only if there is an
