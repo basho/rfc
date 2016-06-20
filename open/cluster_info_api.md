@@ -74,6 +74,8 @@ This information can then be used in the clients to make better choices about:
 
 get_cluster_api_info(Pid) -> ClusterApiInfo
 Pid = pid()
+
+%% The types listed below should be availble in a header file for easier cross-repo consumption
 ClusterApiInfo = [cluster_api_info_result_item()]
 
 cluster_api_info_result_item() = 
