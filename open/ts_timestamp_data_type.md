@@ -8,20 +8,51 @@ more sensible alternative: support time zones in date strings,
 always. Users would not have to specify a time zone, but would always
 have the option of doing so.
 
-### Local time zone
-
-Throughout this document, wherever I refer to "local" time zone, I am
-referring to the Riak server where the request is parsed. There is
-no way today for the client to express its time zone, and we do not
-have a way to specify a time zone cluster-wide or per-table, although
-both ideas have merit.
-
 ### Out of scope for this document
 
 * Date formats
 * Conversion of stored timestamps on output
+* Retrieval of time zone metadata by client libraries
 
-### Background
+### Default time zone
+
+Vital preface to this discussion: all timestamps in the database are
+integers assumed to be in UTC, at least until a future project to
+allow zero points to be redefined. Everything in this document pertains
+to the question of how to translate human-friendly strings into UTC
+integers.
+
+Any time string without an explicit time zone must be interpreted in
+the context of *some* time zone.
+
+Defaulting to the server's time zone is reasonable but risks data
+safety if different servers are on different time zones, intentionally
+or not.
+
+The time zone should be selected from this list (expressed in order of
+preference from most likely to be what the user intended to least likely):
+
+1. Session-specific
+    * See
+[Oracle](https://docs.oracle.com/cd/B19306_01/server.102/b14200/functions143.htm)
+for an example.
+2. Table-specific
+    * Either as a property tied to the bucket type in core metadata or
+      as a new component of the DDL
+3. Cluster-wide
+    * It is straightforward to add a default time zone to core metadata.
+4. Default time zone on coordinating node
+    * (but see caveat above on data safety)
+5. UTC
+    * This is user-unfriendly for anyone not situated along the
+      Greenwich Meridian who wishes to issue queries or inserts based
+      on their local time.
+
+It is impractical to implement all of the above immediately. My plan
+is to implement #3 with #5 as fallback, with #1 and #2 left for future
+projects.
+
+### SQL data types
 
 The SQL standard specifies 5 data types for dates and times:
 
@@ -33,8 +64,12 @@ The SQL standard specifies 5 data types for dates and times:
 
 The `time` data types are for times with no dates, and the `date` data
 type is for dates with no times. Since neither are useful for
-partitioning based on quanta, the key use for timestamps in Riak TS,
-neither are considered relevant (yet).
+partitioning based on quanta, an overriding concern in Riak TS,
+neither are considered for implementation as part of this project.
+
+(However, at some point we need to consider reserving these as
+keywords, which may require escaping with double quotes any matching
+field names. We don't use fields named `time`, do we?)
 
 The key challenge we face with regards to SQL standard compliance is
 that `timestamp without time zone`, which mandates that any time zone
@@ -50,10 +85,10 @@ specify time zones rather than have them silently or noisily ignored.
 
 #### Table creation
 ```
-create table ts1 ( time timestamp with time zone not null,
+create table ts1 ( event timestamp with time zone not null,
                    a varchar not null,
                    primary key ((a, quantum(time, 15, 's')), a, time));
-create table ts2 ( time timestamp without time zone not null,
+create table ts2 ( event timestamp without time zone not null,
                    a varchar not null,
                    primary key ((a, quantum(time, 15, 's')), a, time));
 ```
@@ -67,12 +102,12 @@ choose a default for the basic `timestamp` type.
 
 ```
 select * from ts1 where a = 'fizzbang'
-                    and time > '2016-06-01T15:30:00+05'
-                    and time < '2016-06-01T16:30:00+05';
+                    and event > '2016-06-01T15:30:00+05'
+                    and event < '2016-06-01T16:30:00+05';
 
 select * from ts1 where a = 'fizzbang'
-                    and time > timestamp '2016-06-01T15:30:00Z'
-                    and time < timestamp '2016-06-01T16:30:00Z';
+                    and event > timestamp '2016-06-01T15:30:00Z'
+                    and event < timestamp '2016-06-01T16:30:00Z';
 ```
 
 Using `timestamp` as an explicit type prefix in a query is supported
@@ -90,15 +125,15 @@ an error.
 ##### Implicit time zone
 ```
 select * from ts1 where a = 'fizzbang'
-                    and time > '2016-06-01T15:30:00'
-                    and time < '2016-06-01T16:30:00';
+                    and event > '2016-06-01T15:30:00'
+                    and event < '2016-06-01T16:30:00';
 
 select * from ts1 where a = 'fizzbang'
-                    and time > timestamp '2016-06-01T15:30:00'
-                    and time < timestamp '2016-06-01T16:30:00';
+                    and event > timestamp '2016-06-01T15:30:00'
+                    and event < timestamp '2016-06-01T16:30:00';
 ```
 
-With no time zone indicator, the local time zone is assumed.
+With no time zone indicator, the default time zone is assumed.
 
 ### Proposal
 
@@ -106,10 +141,13 @@ If we can set aside our insistence on a "strict" SQL subset, we can
 simplify the implementation and make users happier, assuming they want
 the same thing we do, which is coherent time zone handling.
 
-1. Parse any binary that arrives in a timestamp field (determined by
-   consulting the DDL). Default to local time zone.
+1. Define and implement mechanism for storing cluster-wide default
+   time zone
 
-2. Add keywords to lexer/parser
+2. Parse any binary that arrives in a timestamp field (determined by
+   consulting the DDL).
+
+3. Add keywords to lexer/parser
     * `timestamp` (when used in queries)
         * Probably silently discard when used outside table definition
     * `with time zone`
@@ -119,13 +157,16 @@ the same thing we do, which is coherent time zone handling.
 
 ### Alternate plan (strict compliance)
 
-1. Parse any binary that arrives in a timestamp field (determined by
-   consulting the DDL). Ignore any time zone, assume local
-   time. Convert to UTC.
+1. Define and implement mechanism for storing cluster-wide default
+   time zone
+
+2. Parse any binary that arrives in a `timestamp` field (determined by
+   consulting the DDL). Ignore any explicit time zone, assume default
+   time. Convert to UTC for storage.
     * This by itself is a legitimate 1.4 release, albeit one that
       would annoy some users
 
-2. Add keywords to lexer/parser
+3. Add keywords to lexer/parser
     * `timestamp` (when used in queries)
         * Probably silently discard when used outside table definition
     * `without time zone`
@@ -133,11 +174,11 @@ the same thing we do, which is coherent time zone handling.
     * `with time zone`
         * Ditto
 
-3. Do whatever is required to DDL to support new data type (`timestamp
+4. Do whatever is required to DDL to support new data type (`timestamp
    with time zone`)
 
-4. Parse any binary that arrives in a timestamp with time zone
-   field. Default to local time. Convert to UTC.
+5. Parse any binary that arrives in a `timestamp with time zone`
+   field. Use default time zone if not specified. Convert to UTC.
 
 ### Upgrade/downgrade concerns
 
@@ -147,9 +188,9 @@ the same thing we do, which is coherent time zone handling.
 
 Capability addresses #2, probably #1 as well.
 
-
 ### References
 
 - [PDF version of SQL standard.](https://www.dropbox.com/s/y55gz6060acd3qr/sql%20foundation.pdf?dl=0) Huge, download at your own risk.
 - [Time date processing for riak_ts](https://github.com/basho/riak/wiki/Time-date-processing-for-riak_ts)
 - [ISO 8601 (Wikipedia)](https://en.wikipedia.org/wiki/ISO_8601)
+- [Session-specific time zones in Oracle](https://docs.oracle.com/cd/B19306_01/server.102/b14200/functions143.htm)
