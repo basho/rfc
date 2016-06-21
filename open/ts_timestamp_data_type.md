@@ -13,6 +13,8 @@ have the option of doing so.
 * Date formats
 * Conversion of stored timestamps on output
 * Retrieval of time zone metadata by client libraries
+* Time/date string parsing by client libraries for use with `put`
+  requests
 
 ### Default time zone
 
