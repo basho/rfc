@@ -113,8 +113,6 @@ Especial consideration needs to be given to maintenance systems that access the 
 * AAE derived from the persisted data
 * metadata written elsewhere, eg Riak Core, DDL beam files, etc, etc
 
-**Note**: if this scenario cannot be satisfied then the change is not backward compatible and some data written in the higher version will not be visible after downgrade.
-
 **Note**: in this scenario the new features MUST be separately enabled from a command line tool and the CLI MUST tell users that if they switch this feature on there is no going back... The proposal for this scenario MUST be reviewed by the CSE team
 
 ## Scenario 8 - (the bad scenario, don't do it!)
