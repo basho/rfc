@@ -22,6 +22,10 @@ A riak_core capability will store the maximum DDL version that the cluster will 
 
 The DDL version is part of the record name as well e.g. `#ddl_v1{ }`.
 
+##### Events on Capability Changes
+
+When a node is downgraded, tables need to be disabled if they are not supported by the whole cluster. With descending keys, the table must be disabled because 
+
 ##### DDL Upgrade Function
 
 Each change to the DDL in a release will require a DDL upgrade and downgrade function.  The upgrade function is used when a lower version of the DDL is received than what the receiving node can handle.
@@ -53,6 +57,16 @@ This means that tables that were created on a higher version node cannot be used
 Downgrading fails when the DDL contains values which do not exist in the older version that are different from the default values. For example, the default ordering for descending keys fields is ascending. If `ASC` is explicitly specified in the `CREATE TABLE` statement then it can be safely downgraded, because it is equivalent to the default. If `DESC` was specified then the record could not be safely downgraded without losing data in the DDL.
 
 On a node downgrade, the node must use DDLs with the version that it was compiled with. It will not be able to downgrade DDLs with a higher version because it does not understand the later record structures than it's own version.
+
+### Scenarios
+
+For descending keys upgrade, the version of the client isn't relevant because `CREATE TABLE` and `SELECT` both uses standard querying APIs which have not changed. Client version is not included.
+
+##### Scenario 1
+
+In this scenario a client talks to a new node in a mixed cluster.
+
+
 
 ### References
 
