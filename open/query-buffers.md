@@ -109,20 +109,33 @@ very end of the WHERE range).
 4. Clients will be able to set an **expiry timeout** for query buffers,
    in a new optional field in the `tsqueryreq` message.
 
+5. Another optional field, `buffer_id`, will be introduced in
+   `tsqueryresp` and `tsqueryreq`, which will be used to return the
+   unique ID of a newly created query buffer, as well as supply it in
+   follow-up queries.
+
 
 ### Initial and follow-up queries
 
-1. Regular, non-streaming queries with an ORDER BY clause are eligible
-   for query buffers.
+1. Regular, non-streaming queries with an ORDER BY or LIMIT clause
+   (referred to in this document as "eligible") will cause query
+   buffers created for them.
 
-2. **Follow-up queries** are those which have SELECT, FROM, WHERE, GROUP
+2. **Follow-up queries** are those which (a) have SELECT, FROM, WHERE, GROUP
    BY and ORDER BY expressions identical with some previously issued
    query (which is then called "initial query" in relation to those
-   following it).
+   following it), and (b) have a matching query bufer ID in
+   `buffer_id` field of the `tsqueryreq` field.
 
 3. A **query hash** can be computed for a query, which shall be the same
    for any two queries related to each other as initial and follow-up,
    and unique otherwise.
+
+4. Each query buffer will have a **query buffer ID** uniquely
+   identifying it. This identifier will be returned in `tsqueryresp`
+   and must be supplied in `tsqueryreq` of each follow-up query in
+   order for it to be redirected to an existing query buffer with a
+   matching ID.
 
 
 ### Execution steps
