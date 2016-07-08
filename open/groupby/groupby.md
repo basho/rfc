@@ -70,7 +70,7 @@ FROM table1
 GROUP BY project
 ```
 
-When a `GROUP BY` is specified, one aggregate is returned per group. Internally the coordinator maintains a dictionary is used, the key is the group by values and the value is the aggregate.
+When a `GROUP BY` is specified, one aggregate is returned per group. Internally the coordinator maintains a dictionary, the key is the group by values and the value is the aggregate.
 
 ![GROUP BY Sequence Diagram](groupby_coordinator.png)
 
@@ -81,6 +81,20 @@ For each row in the result set, the coordinator must:
     1. If no group exists for that key, create the initial state for the group's aggregate. 
 3. "Fold" the row into the aggregate.
 4. Put the aggregate back into the dictionary using the group key.
+
+```sql
+[$vnode-select =
+    SELECT *
+    FROM table1
+    WHERE name = 'wheels' AND project = 'Mars Rover' AND completed > 230000 AND completed completed < 330000
+]
+
+[$finalise =
+    SELECT COUNT(project)
+    FROM [$vnode-select]
+    GROUP BY project
+]
+```
 
 The `GROUP BY` key is a list of cell values, Given the the row and query, for the `tasks` table.
 
