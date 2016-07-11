@@ -12,8 +12,9 @@ This document outlines the requirements for testing Riak Client libraries.
 * Riak must be installed from official packages
 * Riak will be 100% fresh and sparkly new on every test run
 * There will be at least a three-node cluster for tests
-* All branches will be tested, and all commits will be part of a test.
-* Test runs should wait a period of time to "batch" commits. Right now buildbot is set to five minutes.
+* All branches will be tested, and all commits will be part of a test
+* Test runs should wait a period of time to "batch" commits. Right now buildbot is set to five minutes
+* A well-defined set of officially supported language environments will be used for each library. For instance, Python versions `2.7.8`, `2.7.X` (where `X` is the latest), `3.3.X`, `3.4.X`, `3.5.X`
 
 ### Nice-to-have
 
