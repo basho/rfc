@@ -15,6 +15,7 @@ This document outlines the requirements for testing Riak Client libraries.
 * All branches will be tested, and all commits will be part of a test
 * Test runs should wait a period of time to "batch" commits. Right now buildbot is set to five minutes
 * A well-defined set of officially supported language environments will be used for each library. For instance, Python versions `2.7.8`, `2.7.X` (where `X` is the latest), `3.3.X`, `3.4.X`, `3.5.X`
+* Setting up a language's test environment should be scripted. For instance, the `buildbot/Makefile` in the Python client has the entire `pyenv` setup process automated. This will ensure that new nodes added to the CI environment, or that users who wish to run the tests, can do so using a supported environment. Missing requirements will generate informative errors
 
 ### Nice-to-have
 
