@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document explains how to specify upgrade/downgrades.
+This document is designed to help in the review of technical design documents for features that require upgrade and downgrade compatibility.
 
 ## Purpose
 
@@ -17,16 +17,13 @@ The scope of this document is:
 
 ## Usage
 
-This document pertains to any change where a data format that is exchanged between two nodes is changed in any way...
+When the design document for a new feature that requires upgrade/downgrade capability is being reviewed the author and the reviewers should walk through the scenarios in this document until the reviewers are satisfied that the design can cope with all the scenarios that will exist in a mixed cluster.
 
-## Contents
-
-This document covers:
-* how capabilities are registered
-* how riak_core works
-* the criteria for using this document
+If it turns out that there are subtle things missing in upgrade-downgrade that were not captured in the design of review process this document should be updated to reflect that.
 
 ## Capability Registration
+
+The mechanism we use to signal the state of the cluster for a the purposes of upgrade/downgrade are riak capabilities. This is a feature of `riak_core` and you can read more about them in the [riak core capabilities module documentation](https://github.com/basho/riak_core/blob/develop/src/riak_core_capability.erl).
 
 Capabilities are registered at application startup.
 
@@ -76,7 +73,7 @@ An new client connects to an old node in a mixed cluster.
 
 The next scenario relates to the updating of a existing feature in situ - say a performance improvement. This leads to better non-functionals for the customer - but no functional changes.
 
-## Scenario 5
+### Scenario 5
 
 A new internal wire format is introduced for inter-node communications. In this case the new implementation is required to downgrade to the old one if not supported.
 
@@ -86,7 +83,7 @@ A new internal wire format is introduced for inter-node communications. In this 
 
 # Upgrade Of Node Over Persisted Data
 
-## Scenario 6
+### Scenario 6
 
 In this scenario data is written to disk in Version 1 of the software, and the node is upgraded or downgraded in place, and the new software attempts to read the persisted data.
 
@@ -97,7 +94,7 @@ In this scenario data is written to disk in Version 1 of the software, and the n
 * AAE derived from the persisted data
 * metadata written elsewhere, eg Riak Core, DDL beam files, etc, etc
 
-## Scenario 7
+### Scenario 7
 
 In this scenario a node has been downgraded in place and the old version of the software attempts to read data from a vnode containing new format data. The new format data SHOULD be invisible to the old software - if this is not possible see Scenario 8.
 
@@ -115,9 +112,15 @@ Especial consideration needs to be given to maintenance systems that access the 
 
 **Note**: in this scenario the new features MUST be separately enabled from a command line tool and the CLI MUST tell users that if they switch this feature on there is no going back... The proposal for this scenario MUST be reviewed by the CSE team
 
-## Scenario 8 - (the bad scenario, don't do it!)
+Here are two examples of non-backward compatible features, one bad and one good:
 
-In scenario the data on disk needs to be converted back to V1. This is deeply unadvisable - but may be appropriate for low data volumes - eg meta data or other other things in riak core.
+Good: Bucket Types. There is a UI moment that makes it painfully clear that this move will cause data to be written in a form that is unreadable by the previous version. Strictly opt-in by the user.
+
+Bad: Bitcask small keys. Upon upgrade to a version that supported small keys, users were opted in to that behavior causing all data written after upgrading a node to be unreadable by the previous version of Bitcask. Users who needed to easily be able to roll back had to be told to opt-out of small keys via the configuration, or spend a lot of time with a recovery step (à la Scenario 8) to revert the keys to the previous format.
+
+### Scenario 8 - (the bad scenario, don't do it!)
+
+In scenario the data on disk needs to be converted back to V1. This is deeply inadvisable - but may be appropriate for low data volumes - eg meta data or other other things in riak core.
 
 In this scenario the vnode is stopped, the data is transformed in situ and the old version is started.
 
@@ -128,7 +131,7 @@ In this scenario the vnode is stopped, the data is transformed in situ and the o
 * AAE derived from the persisted data
 * **SOME** metadata written elsewhere, eg DDL beam files, etc, etc
 
-Metadata written to Riak Core **MUST** be immutable and not rewritten
+Metadata written to Riak Core **MUST** be immutable and not rewritten - if the application needs to transform and upgrade data in `riak_core` it MUST store that transformed data elsewhere - an example is upgrading a `#ddl_v1{}` record. If the transform is done *in place* is makes the job of downgrading more complex and sometimes impossible.
 
 **Note**: this should only be considered if Scenario 7 cannot be implemented
 
