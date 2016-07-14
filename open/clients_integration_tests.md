@@ -20,6 +20,7 @@ This document outlines the requirements for testing Riak Client libraries.
 ### Nice-to-have
 
 * The versions of Riak being tested should automatically upgrade when new releases are published
+* When an `rc` tag of a Riak product is made, packages for that product should be built and automatically added to the clients test suite
 * Adventurous users should be able to clone the client library repository, run `make test`, and run the test suite in a local environment that matches what is tested internally. Requirements should be minimal, and `make test` will alert the user to any missing requirements
 * Using a local devrel for testing should be easy as well (for testing against experimental Riak versions, or for people like Luke who don't want to futz with VMs, Docker, etc etc)
 
