@@ -1,6 +1,6 @@
 # RFC: Use `gpb` protobuf library
 
-2016/07/12 First Draft
+2016/07/14 First Draft
 
 ### Abstract
 
@@ -8,7 +8,7 @@ Currently the [`erlang_protobuffs`](https://github.com/basho/erlang_protobuffs) 
 
 * Slow
 * Does not deal with "extra" binary data in a message. If a newer message (with additional fields / data) is sent to a deserializer expecting the older format, the deserializer crashes. This limits how upgrades to client libraries can proceed
-* Protobuf is not a core Basho competency
+* Basho shouldn't be in the business of writing and supporting a protobuf library for Erlang, especially given the quality of `gpb`
 * Does not support all of protobuf 2 spec
 
 I propose switching to the [`gpb`](https://github.com/tomas-abrahamsson/gpb) library, which has the following advantages:
