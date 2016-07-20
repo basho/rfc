@@ -29,6 +29,7 @@ Roadmap overview for TS:
 * streaming queries
 * coverage plan queries
 * full cluster scan (needed for proper GROUP BY)
+* 2i index paths for Time Series
 
 Speculative future queries:
 * BigSets/BigMaps/Afrika queries
@@ -53,7 +54,7 @@ The leveldb access pattern is:
 ```
                                                          Vnode 1
                                                                │
-                                                        KVs    │
+                                                   KV and TS   │
                                                           │    │
                                               Bucket 1    │    │
                                                      │    │    │
@@ -91,13 +92,6 @@ The leveldb access pattern is:
                                                           │    │
                                                      ▼    ▼    │
                                                                │
-                                                Time Series    │
-                                                          │    │
-                                                               │
-                                                          │    │
-                                                               │
-                                                          ▼    │
-                                                               │
                                                  2i Indices    │
                                                           │    │
                                                                │
@@ -107,9 +101,10 @@ The leveldb access pattern is:
 ```
 
 Lets understand this diagram in more detail. Each vnode contains three sorts of data:
-* normal KV data - prefix `o`
-* Time Series data with a composite key - prefix `c`
+* normal KV data and Time Series data - prefix `o`
 * 2i index data - prefix `i`
+
+**NOTE** there was a long discussion about prefix TS data with a `c` for composite key - but at decision was taken to just stick with `o`. We are trying to reconstruct the rationale for that and think it might have been that TS and KV were to be seperate products. We need to revist this decision as a matter of urgency in the great merge discussion.
 
 Each of these areas is divided into buckets. 2i indices are only used with KV buckets, so the 2i buckets correspond to the KV buckets for which data has been written with a 2i index.
 
@@ -119,7 +114,7 @@ If there is a KV bucket with an n_val of 4 (and lots of data has been written to
 
 If there has been a TS bucket created with an n_val of 5 - there will be up to 5 keyspaces in the vnode TS portion.
 
-In this diagram we have only expanded the first bucket of the KV section - and we have collapsed the Time Series and 2i portions - they will be expanded as appropriately later in the document.
+In this diagram we have only expanded the first bucket of the KV and TS section - and we have collapsed the 2i portions - they will be expanded as appropriately later in the document.
 
 The ring access pattern is:
 
@@ -164,7 +159,7 @@ The write to a 2i index is done as a transaction:
 ```
                                                          Vnode 1
                                                                │
-  ┌────────────────────────┐                            KVs    │
+  ┌────────────────────────┐                      KV and TS    │
   │Atomic write to a key in│                              │    │
   │   the KV space for a   │                 Bucket 1     │    │
   │     bucket and the     │                        │     │    │
@@ -202,14 +197,6 @@ The write to a 2i index is done as a transaction:
                               ║                           │    │
                               ║                     ▼     ▼    │
                               ║                                │
-                              ║                 Time Series    │
-                              ║                                │
-                              ║                           │    │
-                              ║                                │
-                              ║                           │    │
-                              ║                                │
-                              ║                           ▼    │
-                              ║                                │
                               ║                  2i Indices    │
                               ║                           │    │
                               ║               Bucket 1    │    │
@@ -217,15 +204,15 @@ The write to a 2i index is done as a transaction:
                               ║                      │    │    │
                               ║       Keyspace 1     │    │    │
                               ║                │     │    │    │
+                              ║                │     │    │    │
+                              ║                │     │    │    │
+                              ║                │     │    │    │
+                              ║                ▼     │    │    │
+                              ║       Keyspace 2     │    │    │
+                              ║                │     │    │    │
+                              ║                │     │    │    │
+                              ║                │     │    │    │
                               ╚══════════════▶ │     │    │    │
-                                               │     │    │    │
-                                               │     │    │    │
-                                               ▼     │    │    │
-                                      Keyspace 2     │    │    │
-                                               │     │    │    │
-                                               │     │    │    │
-                                               │     │    │    │
-                                               │     │    │    │
                                                ▼     │    │    │
                                       Keyspace 3     │    │    │
                                                │     │    │    │
@@ -288,35 +275,26 @@ Now let us look at an index GET:
 ```
                                                          Vnode 1
                                                                │
-                                                        KVs    │
+                                                   KV and TS   │
                                                           │    │
                                                                │
                                                           │    │
                                                                │
                                                           ▼    │
-                                                               │
-   Read Request ═════════════╗                  Time Series    │
-                             ║                            │    │
-  ┌────────────────────────┐ ║                                 │
-  │ The request goes to a  │ ║                            │    │
-  │    particular index    │ ║                                 │
-  │    pertaining to a     │ ║                            ▼    │
-  │ particular bucket in a │ ║                                 │
-  │ particular keyspace on │ ║                   2i Indices    │
-  │    the chosen vnode    │ ║                            │    │
-  └────────────────────────┘ ║                Bucket 1    │    │
-                             ║                       │    │    │
-                             ║                       │    │    │
-                             ║        Keyspace 1     │    │    │
+                                                 2i Indices    │
+   Read Request ═════════════╗                            │    │
+                             ║                Bucket 1    │    │
+  ┌────────────────────────┐ ║                       │    │    │
+  │ The request goes to a  │ ║        Keyspace 1     │    │    │
+  │    particular index    │ ║                 │     │    │    │
+  │    pertaining to a     │ ║                 │     │    │    │
+  │ particular bucket in a │ ║                 │     │    │    │
+  │ particular keyspace on │ ║                 │     │    │    │
+  │    the chosen vnode    │ ║                 ▼     │    │    │
+  └────────────────────────┘ ║        Keyspace 2     │    │    │
                              ║                 │     │    │    │
-                             ║                 │     │    │    │
-                             ║                 │     │    │    │
-                             ║                 │     │    │    │
-                             ║                 ▼     │    │    │
-                             ║        Keyspace 2     │    │    │
                              ║                 │     │    │    │
                              ╚════════════▶    │     │    │    │
-                                               │     │    │    │
                                                │     │    │    │
                                                ▼     │    │    │
                                       Keyspace 3     │    │    │
@@ -382,30 +360,29 @@ List keys comes in 2 versions - one which lists keys for KV and one for TS - onl
 ```
                                                          Vnode 1
                                                                │
-                                                        KVs    │
+                                                  KV and TS    │
                                                           │    │
                                               Bucket 1    │    │
                                                      │    │    │
-                                                     │    │    │
                                        Keyspace 1    │    │    │
+                                                │    │    │    │
                          ╔════════║             │    │    │    │
      Request    ═════════╝        ║             │    │    │    │
                                   ║             │    │    │    │
-  ┌────────────────────────┐      ║             │    │    │    │
-  │ The request goes to a  │      ║             ▼    │    │    │
-  │particular bucket (in KV│      ║    Keyspace 2    │    │    │
+  ┌────────────────────────┐      ║             ▼    │    │    │
+  │ The request goes to a  │      ║    Keyspace 2    │    │    │
+  │particular bucket (in KV│      ║             │    │    │    │
   │or TS as appropriate) on│      ║             │    │    │    │
   │  the chosen vnode and  │      ║             │    │    │    │
   │ then executes a range  │      ║             │    │    │    │
-  │ scan across keyspaces  │      ║             │    │    │    │
-  └────────────────────────┘      ║             ▼    │    │    │
-                                  ║    Keyspace 3    │    │    │
+  │ scan across keyspaces  │      ║             ▼    │    │    │
+  └────────────────────────┘      ║    Keyspace 3    │    │    │
                                   ║             │    │    │    │
                                   ║             │    │    │    │
                                   ║             │    │    │    │
                                   ║             │    │    │    │
-                                  ▼             ▼    ▼    │    │
-                                                          │    │
+                                  ║             ▼    ▼    │    │
+                                  ▼                       │    │
                                               Bucket 2    │    │
                                                      │    │    │
                                                           │    │
@@ -419,13 +396,6 @@ List keys comes in 2 versions - one which lists keys for KV and one for TS - onl
                                                      │    │    │
                                                           │    │
                                                      ▼    ▼    │
-                                                               │
-                                                Time Series    │
-                                                          │    │
-                                                               │
-                                                          │    │
-                                                               │
-                                                          ▼    │
                                                                │
                                                  2i Indices    │
                                                           │    │
@@ -483,23 +453,22 @@ List buckets is even more intrusive than list keys:
 ```
                                                          Vnode 1
                                                                │
-                                                        KVs    │
+                                                  KV and TS    │
                                                           │    │
                                               Bucket 1    │    │
                                                      │    │    │
-                                                     │    │    │
                                        Keyspace 1    │    │    │
+                                                │    │    │    │
                          ╔════════╦             │    │    │    │
      Request    ═════════╝        ║             │    │    │    │
                                   ║             │    │    │    │
-  ┌────────────────────────┐      ║             │    │    │    │
-  │The request goes to the │      ║             ▼    │    │    │
-  │ start of the KV space, │      ║    Keyspace 2    │    │    │
-  │   scans down all the   │      ║             │    │    │    │
-  │entries and onto the TS │      ║             │    │    │    │
-  │         space          │      ║             │    │    │    │
-  └────────────────────────┘      ║             │    │    │    │
-                                  ║             ▼    │    │    │
+  ┌────────────────────────┐      ║             ▼    │    │    │
+  │The request goes to the │      ║    Keyspace 2    │    │    │
+  │ start of the KV and TS │      ║             │    │    │    │
+  │ space, scans down all  │      ║             │    │    │    │
+  │the entries for all the │      ║             │    │    │    │
+  │        buckets         │      ║             │    │    │    │
+  └────────────────────────┘      ║             ▼    │    │    │
                                   ║    Keyspace 3    │    │    │
                                   ║             │    │    │    │
                                   ║             │    │    │    │
@@ -519,14 +488,7 @@ List buckets is even more intrusive than list keys:
                                   ║                       │    │
                                   ║                  │    │    │
                                   ║                       │    │
-                                  ║                  ▼    ▼    │
-                                  ║                            │
-                                  ║             Time Series    │
-                                  ║                       │    │
-                                  ║                            │
-                                  ║                       │    │
-                                  ║                            │
-                                  ▼                       ▼    │
+                                  ▼                  ▼    ▼    │
                                                                │
                                                  2i Indices    │
                                                           │    │
@@ -581,30 +543,31 @@ In this mode each vnode is supplied a set of keys and the map reduce job retriev
 ```
                                                          Vnode 1
                                                                │
-                                                        KVs    │
+                                                  KV and TS    │
                                                           │    │
                                               Bucket 1    │    │
-                                                     │    │    │
-                                                     │    │    │
+                                                          │    │
                                        Keyspace 1    │    │    │
+                                                │    │    │    │
                                                 │    │    │    │
      Request    ═══════════════╗                │    │    │    │
                                ╠══════════════▶ │    │    │    │
-  ┌────────────────────────┐   ║                │    │    │    │
-  │  A set of keys spread  │   ║                ▼    │    │    │
-  │ across key spaces in a │   ║       Keyspace 2    │    │    │
+  ┌────────────────────────┐   ║                ▼    │    │    │
+  │  A set of keys spread  │   ║       Keyspace 2    │    │    │
+  │ across key spaces in a │   ║                │    │    │    │
   │  particular bucket is  │   ║                │    │    │    │
   │  passed to the vnode   │   ║                │    │    │    │
   └────────────────────────┘   ╠══════════════▶ │    │    │    │
-                               ║                │    │    │    │
                                ║                ▼    │    │    │
                                ║       Keyspace 3    │    │    │
                                ║                │    │    │    │
                                ║                │    │    │    │
+                               ║                │    │    │    │
                                ╚══════════════▶ │    │    │    │
-                                                │    │    │    │
                                                 ▼    ▼    │    │
+                                                          │    │
                                               Bucket 2    │    │
+                                                          │    │
                                                      │    │    │
                                                           │    │
                                                      │    │    │
@@ -616,16 +579,7 @@ In this mode each vnode is supplied a set of keys and the map reduce job retriev
                                                           │    │
                                                      │    │    │
                                                           │    │
-                                                     ▼    │    │
                                                           ▼    │
-                                                Time Series    │
-                                                               │
-                                                          │    │
-                                                               │
-                                                          │    │
-                                                               │
-                                                          ▼    │
-                                                               │
                                                  2i Indices    │
                                                           │    │
                                                                │
@@ -676,22 +630,21 @@ Per bucket map reduce scans all the keys in a particular bucket and operates on 
 ```
                                                          Vnode 1
                                                                │
-                                                        KVs    │
+                                                  KV and TS    │
                                                           │    │
                                               Bucket 1    │    │
                                                      │    │    │
-                                                     │    │    │
                                        Keyspace 1    │    │    │
-                                                │    │    │    │
-     Request    ═══════════════════║            │    │    │    │
+                         ╔═════════║            │    │    │    │
+                         ║         ║            │    │    │    │
+     Request    ═════════╝         ║            │    │    │    │
                                    ║            │    │    │    │
-  ┌────────────────────────┐       ║            │    │    │    │
-  │All the keys in all the │       ║            ▼    │    │    │
-  │    keyspaces for a     │       ║   Keyspace 2    │    │    │
+  ┌────────────────────────┐       ║            ▼    │    │    │
+  │All the keys in all the │       ║   Keyspace 2    │    │    │
+  │    keyspaces for a     │       ║            │    │    │    │
   │particular KV bucket are│       ║            │    │    │    │
   │        scanned         │       ║            │    │    │    │
   └────────────────────────┘       ║            │    │    │    │
-                                   ║            │    │    │    │
                                    ║            ▼    │    │    │
                                    ║   Keyspace 3    │    │    │
                                    ║            │    │    │    │
@@ -699,6 +652,7 @@ Per bucket map reduce scans all the keys in a particular bucket and operates on 
                                    ║            │    │    │    │
                                    ║            │    │    │    │
                                    ▼            ▼    ▼    │    │
+                                                          │    │
                                               Bucket 2    │    │
                                                      │    │    │
                                                           │    │
@@ -711,15 +665,7 @@ Per bucket map reduce scans all the keys in a particular bucket and operates on 
                                                           │    │
                                                      │    │    │
                                                           │    │
-                                                     ▼    │    │
-                                                          ▼    │
-                                                Time Series    │
-                                                               │
-                                                          │    │
-                                                               │
-                                                          │    │
-                                                               │
-                                                          ▼    │
+                                                     ▼    ▼    │
                                                                │
                                                  2i Indices    │
                                                           │    │
@@ -777,21 +723,20 @@ The all-buckets map reduce runs over all the buckets in the KV space of the vnod
 ```
                                                          Vnode 1
                                                                │
-                                                        KVs    │
+                                                  KV and TS    │
                                                           │    │
                                               Bucket 1    │    │
                                                      │    │    │
-                                                     │    │    │
-                                       Keyspace 1    │    │    │
-                                                │    │    │    │
+                                   ║   Keyspace 1    │    │    │
+                                   ║            │    │    │    │
+                                   ║            │    │    │    │
      Request    ═══════════════════║            │    │    │    │
                                    ║            │    │    │    │
-  ┌────────────────────────┐       ║            │    │    │    │
-  │All the keys in all the │       ║            ▼    │    │    │
-  │  keyspaces for all KV  │       ║   Keyspace 2    │    │    │
+  ┌────────────────────────┐       ║            ▼    │    │    │
+  │All the keys in all the │       ║   Keyspace 2    │    │    │
+  │  keyspaces for all KV  │       ║            │    │    │    │
   │  buckets are scanned   │       ║            │    │    │    │
   └────────────────────────┘       ║            │    │    │    │
-                                   ║            │    │    │    │
                                    ║            │    │    │    │
                                    ║            ▼    │    │    │
                                    ║   Keyspace 3    │    │    │
@@ -802,7 +747,6 @@ The all-buckets map reduce runs over all the buckets in the KV space of the vnod
                                    ║            ▼    ▼    │    │
                                    ║                      │    │
                                    ║          Bucket 2    │    │
-                                   ║                 │    │    │
                                    ║                 │    │    │
                                    ║   Keyspace 1    │    │    │
                                    ║            │    │    │    │
@@ -823,21 +767,12 @@ The all-buckets map reduce runs over all the buckets in the KV space of the vnod
                                    ║            │    │    │    │
                                    ║            ▼    ▼    │    │
                                    ║                      │    │
-                                   ║                      │    │
                                    ║          Bucket 3    │    │
                                    ║                 │    │    │
                                    ║                      │    │
                                    ║                 │    │    │
                                    ║                      │    │
                                    ▼                 ▼    ▼    │
-                                                               │
-                                                Time Series    │
-                                                               │
-                                                          │    │
-                                                               │
-                                                          │    │
-                                                               │
-                                                          ▼    │
                                                                │
                                                  2i Indices    │
                                                           │    │
@@ -858,16 +793,10 @@ There is only one query path implemented in time series - the multi-quanta sub-q
 TS's principle innovation is that related data is co-located - so that data with times that fall into the same quanta is written to the same vnode. The vnode access path therefore contains another layer of nesting:
 
 ```
-                                                                    Vnode │
+
+                                                                    Vnode 1
                                                                           │
-                                                                   KVs    │
-                                                                     │    │
-                                                                          │
-                                                                     │    │
-                                                                          │
-                                                                     ▼    │
-                                                                          │
-     Request    ════════════════╗                          Time Series    │
+     Request    ════════════════╗                            KV and TS    │
                                 ║                                    │    │
   ┌────────────────────────┐    ║                        Bucket 1    │    │
   │ The request goes to a  │    ║                               │    │    │
@@ -925,7 +854,7 @@ TS's principle innovation is that related data is co-located - so that data with
                                                                           │
                                                                      │    │
                                                                           │
-                                                                     ▼    ▼
+                                                                     ▼    
 ```
  
  A TS Query is converted into a set of sub-queries - up to the max_quanta setting and these are simultaneously executed on n_val vnodes. The default settings are max_quanta = 5 and n_val = 3 so up to 15 ranges scans will be executing simultaneously. These may be distributed around the physical cluster unevenly. The diagram shows 2 sub-queries and n_val of 3.
@@ -978,7 +907,7 @@ Overload protection is very primitive - the defaults are that each node on the c
 
 This section describes work that is on the roadmap. The purpose of this RFC really is to look at the performance implications of going down various of these options **in light of our operation experience with existing query options***.
 
-### Future TS Streaming queries
+### Future TS Streaming Queries
 
 Streaming queries have the same on-vnode characteristics as existing queries, how they differ is that the sub-queries are executed sequentially and not simultaneously.
 
@@ -1063,60 +992,57 @@ These queries can be safely executed with indefinite size. If the query has no o
 Coverage plan queries would bundle up the visits to a particular vnode with a coverage plan and be executed sequentially like streaming queries - they would reduce the number of discrete queries - but violate the normal key order of results return:
 
 ```
-                                                                    Vnode │
+                                                                    Vnode 1
                                                                           │
-                                                                   KVs    │
-                                                                     │    │
-                                                                          │
-                                                                     │    │
-                                                                          │
-                                                                     ▼    │
-                                                                          │
-     Request    ════════════════╗                          Time Series    │
-                                ║                                    │    │
-  ┌────────────────────────┐    ║                        Bucket 1    │    │
-  │A list of quantums to be│    ║                               │    │    │
-  │scanned for a particular│    ║                Keyspace 1     │    │    │
-  │ bucket is passed to a  │    ║                         │     │    │    │
-  │vnode - they may be from│    ║           Quantum 1     │     │    │    │
-  │     many keyspaces     │    ╠═══════════════║   │     │     │    │    │
-  └────────────────────────┘    ║               ║   │     │     │    │    │
-                                ║               ▼   │     │     │    │    │
-                                ║                         │     │    │    │
-                                ║           Quantum 2     │     │    │    │
-                                ║                   │     │     │    │    │
-                                ║                   │     │     │    │    │
-                                ║                   │     │     │    │    │
-                                ║                   │     │     │    │    │
-                                ║                   ▼     │     │    │    │
-                                ║                         │     │    │    │
-                                ║           Quantum 3     │     │    │    │
-                                ║                   │     │     │    │    │
-                                ║                   │     │     │    │    │
-                                ║                   │     │     │    │    │
-                                ║                   │     │     │    │    │
-                                ║                   ▼     ▼     │    │    │
-                                ║                               │    │    │
-                                ║                Keyspace 2     │    │    │
-                                ║                         │     │    │    │
-                                ║           Quantum 4     │     │    │    │
-                                ║                   │     │     │    │    │
-                                ║                   │     │     │    │    │
-                                ║                   │     │     │    │    │
-                                ║                         │     │    │    │
-                                ║           Quantum 5     │     │    │    │
-                                ╠═══════════════║   │     │     │    │    │
-                                ║               ║   │     │     │    │    │
-                                ║               ▼   │     │     │    │    │
-                                ║                   │     │     │    │    │
-                                ║                   ▼     │     │    │    │
-                                ║                         │     │    │    │
-                                ║           Quantum 6     │     │    │    │
-                                ╚════════════════║  │     │     │    │    │
-                                                 ║  │     │     │    │    │
-                                                 ▼  │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    ▼     ▼     │    │    │
+     Request    ═══════════════╦╗                            KV and TS    │
+                               ║║                                    │    │
+  ┌────────────────────────┐   ║║                        Bucket 1    │    │
+  │A list of quantums to be│   ║║                               │    │    │
+  │scanned for a particular│   ║║                Keyspace 1     │    │    │
+  │ bucket is passed to a  │   ║║                         │     │    │    │
+  │vnode - they may be from│   ║║           Quantum 1     │     │    │    │
+  │     many keyspaces     │   ║╚═══════════════║   │     │     │    │    │
+  └────────────────────────┘   ║                ║   │     │     │    │    │
+                               ║                ║   │     │     │    │    │
+                               ║                ║   │     │     │    │    │
+                               ║                ▼   ▼     │     │    │    │
+                               ║                          │     │    │    │
+                               ║            Quantum 2     │     │    │    │
+                               ║                    │     │     │    │    │
+                               ║                    │     │     │    │    │
+                               ║                    │     │     │    │    │
+                               ║                    │     │     │    │    │
+                               ║                    ▼     │     │    │    │
+                               ║                          │     │    │    │
+                               ║            Quantum 3     │     │    │    │
+                               ║                    │     │     │    │    │
+                               ║                    │     │     │    │    │
+                               ║                    │     │     │    │    │
+                               ║                    │     │     │    │    │
+                               ║                    ▼     ▼     │    │    │
+                               ║                                │    │    │
+                               ║                 Keyspace 2     │    │    │
+                               ║                                │    │    │
+                               ║            Quantum 4     │     │    │    │
+                               ║                    │     │     │    │    │
+                               ║                    │     │     │    │    │
+                               ║                    │     │     │    │    │
+                               ║                    │     │     │    │    │
+                               ║                    ▼     │     │    │    │
+                               ║                          │     │    │    │
+                               ║            Quantum 5     │     │    │    │
+                               ╠═══════════════║    │     │     │    │    │
+                               ║               ║    │     │     │    │    │
+                               ║               ║    │     │     │    │    │
+                               ║               ║    │     │     │    │    │
+                               ║               ▼    ▼     │     │    │    │
+                               ║                          │     │    │    │
+                               ║            Quantum 6     │     │    │    │
+                               ╚═══════════════║    │     │     │    │    │
+                                               ║    │     │     │    │    │
+                                               ║    │     │     │    │    │
+                                               ║    │     │     │    │    │
+                                               ▼    ▼     ▼     │    │    │
                                                                 │    │    │
                                                  Keyspace 3     │    │    │
                                                           │     │    │    │
@@ -1199,14 +1125,7 @@ Choosing between the two execution modes (Streaming Vs Coverage Plan) might depe
 For queries which cannot be mapped to quanta - that is to say SQL queries where the WHERE clause does not fully cover the primary key - it is not possible to execute them except by a coverage plan with a full bucket scan.
 
 ```
-                                                                    Vnode │
-                                                                          │
-                                                                   KVs    │
-                                                                     │    │
-                                                                          │
-                                                                     │    │
-                                                                          │
-                                                                     ▼    │
+                                                                    Vnode 1
                                                                           │
      Request    ════════════╗                              Time Series    │
                             ║                                        │    │
@@ -1325,3 +1244,15 @@ These queries requires a full bucket scan on all vnodes - so are distributed by 
 The major red flag is that we have a TS roadmap product process that keeps pushing us towards full-coverage cluster scan queries - even though we know that all the other full-coverage cluster-scan access paths are explicity ruled out for production clusters.
 
 Following our existing deployment guidelines a these queries should only be run on a non-production cluster on the other side of an MDC link. Should we not change our product/pricing processes WRT to TS to accomodate this?
+
+
+### Future TS 2i Index Queries
+
+
+
+---
+
+## Future Queries
+
+Conventional RDBS's have a limited number of data access modes from which queries are composed:
+
