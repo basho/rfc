@@ -6,7 +6,7 @@ This RFC address access paths for the query system - it arises from discussions 
 
 ## Purpose
 
-To provide an analytical framework for discussion access paths for the query rewriter.
+To provide an analytical framework for discussion of access paths. The query rewriter is about to start being a real, complex CS thing. Time to go full Wayne Gretzky - skate to where the puck is going to be...
 
 ## Scope
 
@@ -16,14 +16,18 @@ The scope of this RFC is split in 3:
 * some speculative future query access paths on the other side of TS/KV merge, BigSets/BigMaps/Afrika...
 
 Current Riak query access paths:
-* current KV Queries
-  - all multi-key access paths
-    * 2i
-    * list keys
-    * list buckets
-    * map reduce
+* current KV queries
 * current Time Series queries
-  - 5 quanta-spanning sub-queries
+
+The current KV queries are all multi-key access paths
+* 2i
+* list keys
+* list buckets
+* map reduce
+
+The current TS Queries are:
+* SQL SELECTs - multiple quanta-spanning sub-queries
+* single key gets
 
 Roadmap overview for TS:
 * streaming queries
@@ -36,6 +40,8 @@ Speculative future queries:
 * eventually consistent indexes
 * eventually consistent joins
 * key-inversion MDC query setups
+
+Capturing statistics about data cardinality etc, to drive heuristic determination of query plans.
 
 **NOTE** Coverage Plans typically 'loop around themselves' covering all keyspaces for all vnodes *except for the last one* to which filters are applied. Where ever this document talks about at-vnode access patterns for query paths that use coverage plans they discuss the *normal case* and elide the special 'last vnode' filtered case for ease of exposition.
 
@@ -802,7 +808,7 @@ The coverage plan is like the per-bucket one with the same caveats. All-buckets 
 
 ---
 
-## Time Series queries
+## Time Series SQL SELECT Queries
 
 There is only one query path implemented in time series - the multi-quanta sub-query where the WHERE clause fully covers the primary key.
 
@@ -1572,6 +1578,8 @@ Afrika projects out these joins and expresses them as CRDTs. We use Maps to impl
 
 In nested BigMaps and BigSets the sets (which contain the table projections) are co-located on disk.
 
+When joined tables are expressed as projections in BigSets/BigMaps - the joins are consistent.
+
 ### Afrika Queries
 
 There is a working prototype that shows an implementation of table joins and projections for Afrika - that will be taken as a given and not re-iterated here.
@@ -1618,7 +1626,7 @@ As always there is a trade-off for using an index - adding an item which is inde
   ║                                                                 ║
   ║  ┌─────────┐                                                    ║        ┌─────────┐
   ║  │         │                                                    ║        │         │
-  ╠═▶│ Vnode11 │                                                    ║        │ Vnode 4 │
+  ╠═▶│Vnode 11 │                                                    ║        │ Vnode 4 │
   ║  │         │                       ╔═════Deltas══╦══════════════╣        │         │
   ║  └─────────┘                       ║             ║              ║        └─────────┘
   ║                                    ▼             ▼              ▼
@@ -1662,7 +1670,7 @@ Updating an index (ie changing the stored value would generate two sets of Index
   ║                                                                 ║                     ║
   ║  ┌─────────┐                                                    ║        ┌─────────┐  ║
   ║  │         │                                                    ║        │         │  ║
-  ╠═▶│ Vnode11 │                                                    ║        │ Vnode 4 │  ║
+  ╠═▶│Vnode 11 │                                                    ║        │ Vnode 4 │  ║
   ║  │         │                       ╔═════Deltas══╦══════════════╣        │         │  ║
   ║  └─────────┘                       ║             ║              ║        └─────────┘  ║
   ║                                    ▼             ▼              ▼                     ║
@@ -1676,3 +1684,177 @@ Updating an index (ie changing the stored value would generate two sets of Index
   ╚══════════════════════════════════════(derived from ═════════════╩════(derived from ═══╝
                                             Delta)                           Delta)
 ```
+
+These sort of indexes have different ring distribution behaviours to 2i indices. The 2i index distribution to vnodes has the same characteristics as key distribution on the ring - the expectation is that all 2i index data sets on different vnodes should balance.
+
+In normal usage an index has a cardinality very significantly lower than the no of records in a data set. An eventually consistent index with a cardinality some multiple of the ring size should be fairly smooth, if the distribution of values is also even - but it is possible to build hot-spot indexes quite easily.
+
+It is obvious then that an eventually consistent index would have a different ring access pattern than a 2i index - a single read (possibly streaming if the index is large) - followed by a distribution of multi-key reads around the ring.
+
+There remains not-inconsiderable problems in designing a query rewriter to handle index reads but that is a problem for another day.
+
+### Eventually Consistent Joins
+
+Consider the following data structure - a variant of a pig's ear:
+
+```
+             ┌────────────────────────────────┐
+             │                                │
+             │                                │
+             │                             ╔════╦════════════════╗
+             │       ┌────────────────────┼║    ║     Person     ║
+             │       │                     ╠════╬════════════════╣
+             │       │                     │Key1│****************│
+             ┼       │                     ├────┼────────────────┤
+            ╱│╲      │                     │Key2│****************│
+ ╔═══════╦═══════╦═══════╗                 ├────┼────────────────┤
+ ║Primary║ Liker ║ Likee ║                 │Key3│****************│
+ ╠═══════╬═══════╬═══════╣                 ├────┼────────────────┤
+ │  P1   │ Key3  │ Key7  │                 │Key4│****************│
+ ├───────┼───────┼───────┤                 ├────┼────────────────┤
+ │  P2   │ Key3  │ Key9  │                 │Key5│****************│
+ ├───────┼───────┼───────┤                 ├────┼────────────────┤
+ │  P3   │ Key4  │ Key3  │                 │Key6│****************│
+ └───────┴───────┴───────┘                 ├────┼────────────────┤
+                                           │Key7│****************│
+                                           ├────┼────────────────┤
+                                           │Key8│****************│
+                                           ├────┼────────────────┤
+                                           │Key9│****************│
+                                           └────┴────────────────┘
+```
+
+This represents the paired relationships `alice likes bob` and `bob is liked by alice`.
+
+This would look similar to an eventually consistent index at the ring:
+
+```
+
+     ┌─────────┐                                                             ┌─────────┐
+     │         │                                                             │         │
+     │Vnode 14 │         Request    ══════════════Write═════════════╗        │ Vnode 1 │
+     │         │                                                    ║        │         │
+     └─────────┘      ┌─────────────┐                               ║        └─────────┘
+                      │             │                               ║
+     ┌─────────┐      │Write n_val=3│                               ║        ┌─────────┐
+     │         │      │   copies    │                               ║        │         │
+     │Vnode 13 │      │             │                               ║        │ Vnode 2 │
+     │         │      └─────────────┘                               ║        │         │
+     └─────────┘                                                    ║        └─────────┘
+                                                                    ║
+     ┌─────────┐                                                    ║        ┌─────────┐
+     │         │                                                    ║        │         │
+  ╔═▶│Vnode 12 │                                                    ║        │ Vnode 3 │
+  ║  │         │                                                    ║        │         │
+  ║  └─────────┘                                                    ║        └─────────┘
+  ║                                                                 ║
+  ║  ┌─────────┐                                                    ║        ┌─────────┐
+  ║  │         │                                                    ║        │         │
+  ╠═▶│Vnode 11 │                                                    ║        │ Vnode 4 │
+  ║  │         │                       ╔═══Deltas════╦══════════════╣        │         │
+  ║  └─────────┘                       ║             ║              ║        └─────────┘
+  ║                                    ▼             ▼              ▼
+  ║  ┌─────────┐   ┌─────────┐    ┌─────────┐   ┌─────────┐    ┌─────────┐   ┌─────────┐
+  ║  │         │   │         │    │         │   │         │    │         │   │         │
+  ╠═▶│Vnode 10 │   │ Vnode 9 │    │ Vnode 8 │   │ Vnode 7 │    │ Vnode 6 │   │ Vnode 5 │
+  ║  │         │   │         │    │         │   │         │    │         │   │         │
+  ║  └─────────┘   └─────────┘    └─────────┘   └─────────┘    └─────────┘   └─────────┘
+  ║                                                                 ║
+  ║                                      Add Pigs Ear               ║
+  ╚═════════════════════════════════════(derived from ══════════════╝
+                                            Delta)
+```
+
+**NOTE** this proposal is based on the **assertion** that the causality information used to create a CRDT delta can be spliced and re-purposed to populate an pigs ear eventually consistent join - which is a wholly derivative view of the CRDT. That assertion will require:
+* an appropriate proof
+* a design
+* a model (and probably a PoC)
+
+
+There is a non-trivial matter of AAE for eventually consistent joins etc, etc and further not inconsiderable etceteras...)
+
+### Key-Inversion MDC
+
+In time series we can alter the natural sort order of queries by specifying keys as ASC (for ascending) or DESC (for descending). These determine the order which data is return to users (particularly if a LIMIT clause is used).
+
+If we look at Afrika data partitioning we see that data is logically grouped on disk by the CRDT identifier. By applying key manipulation at the MDC layer it would be possible to create a cluster that had different data groupings on either side simply by reversing the order of components in a key:
+
+```
+ ┌──────────────────────────────────┐                        ┌──────────────────────────────────┐
+ │      Transactional Cluster       │                        │        Reporting Cluster         │
+ │           (OLTP-like)            │──────────MDC───────────│           (OLAP-like)            │
+ │                                  │                        │                                  │
+ └──────────────────────────────────┘                        └──────────────────────────────────┘
+  Key1              ****************                          Key1  ****************
+  Primary1 - Key1   ****************                          Key2  ****************
+  Primary2 - Key1   ****************                          Key3  ****************
+  Primary6 - Key1   ****************
+  Primary8 - Key1   ****************                          Primary1 - Key1 ****************
+  NewP10 - Primary1 ****************                          Primary2 - Key1 ****************
+  NewP13 - Primary8 ****************                          Primary3 - Key3 ****************
+  NewP15 - Primary8 ****************                          Primary4 - Key2 ****************
+  NewP16 - Primary2 ****************                          Primary5 - Key2 ****************
+  NewP17 - Primary1 ****************                          Primary6 - Key1 ****************
+  NewP22 - Primary6 ****************                          Primary7 - Key3 ****************
+  NewP25 - Primary1 ****************                          Primary8 - Key1 ****************
+  NewP27 - Primary2 ****************                          Primary9 - Key2 ****************
+  NewP28 - Primary8 ****************
+                                                              NewP10 - Primary1 ****************
+  Key2              ****************                          NewP11 - Primary7 ****************
+  Primary4 - Key2   ****************                          NewP12 - Primary3 ****************
+  Primary5 - Key2   ****************                          NewP13 - Primary8 ****************
+  Primary9 - Key2   ****************                          NewP15 - Primary8 ****************
+  NewP18 - Primary4 ****************                          NewP16 - Primary2 ****************
+  NewP19 - Primary9 ****************                          NewP17 - Primary1 ****************
+  NewP20 - Primary9 ****************                          NewP18 - Primary4 ****************
+  NewP21 - Primary5 ****************                          NewP19 - Primary9 ****************
+  NewP23 - Primary5 ****************                          NewP20 - Primary9 ****************
+  NewP24 - Primary9 ****************                          NewP21 - Primary5 ****************
+                                                              NewP22 - Primary6 ****************
+  Key3               ****************                         NewP23 - Primary5 ****************
+  Primary3 - Key3    ****************                         NewP24 - Primary9 ****************
+  Primary7 - Key3    ****************                         NewP25 - Primary1 ****************
+  NewP11 - Primary7  ****************                         NewP26 - Primary7 ****************
+  NewP12 - Primary3  ****************                         NewP27 - Primary2 ****************
+  NewP26 - Primary7  ****************                         NewP28 - Primary8 ****************
+```
+
+This would give us an obvious enterprise class product with a payment line - and one that fits in with how customers currently organise their infrastructure:
+
+```
+
+      Per-key read                                Table Scan
+       and writes                                  queries
+            │                                          │
+            │                                          │
+            │                                          │
+            ▼                                          ▼
+ ┌───┐ ┌───┐ ┌───┐ ┌───┐                    ┌───┐ ┌───┐ ┌───┐ ┌───┐
+ │   │ │   │ │   │ │   │                    │   │ │   │ │   │ │   │
+ └───┘ └───┘ └───┘ └───┘                    └───┘ └───┘ └───┘ └───┘
+ ┌───┐             ┌───┐                    ┌───┐             ┌───┐
+ │   │             │   │                    │   │             │   │
+ └───┘             └───┘                    └───┘             └───┘
+ ┌───┐             ┌───┐                    ┌───┐             ┌───┐
+ │   │    OLTP     │   │────────MDC────────▶│   │     OLAP    │   │
+ └───┘             └───┘                    └───┘             └───┘
+ ┌───┐             ┌───┐                    ┌───┐             ┌───┐
+ │   │             │   │                    │   │             │   │
+ └───┘             └───┘                    └───┘             └───┘
+ ┌───┐ ┌───┐ ┌───┐ ┌───┐                    ┌───┐ ┌───┐ ┌───┐ ┌───┐
+ │   │ │   │ │   │ │   │                    │   │ │   │ │   │ │   │
+ └───┘ └───┘ └───┘ └───┘                    └───┘ └───┘ └───┘ └───┘
+```
+
+### Statistics
+
+Assessing the performance of a index queries, whether or not they hotspot the cluster and the most appropriate path for a query rewriter to emit all require knowledge of the data cardinality.
+
+We need to asses how we assemble histograms to feed the query rewriter based on the data:
+* on ingress - keep data histograms up to date
+* in a map reduce job - build (and/or rebuild) the histograms
+* some combination of the two - build a histogram state ab initio and then maintain it with ingress data
+
+---
+
+Fin
