@@ -18,7 +18,23 @@ If the `luceneMatchVersion` is incremented to match Solr version 4.10.4, the Sol
 
 We propose that for upgrade, no existing Solr indices (i.e., indices created with previous versions of Riak) be automatically upgraded.  Specifically, any existing indices will continue to operate with the `luceneMatchVersion` that corresponds to Solr 4.7.0, if no action is taken by the user.  Any indices created after the upgrade, in contrast, will use the `luceneMatchVersion` that is compatible with Solr 4.10.4.
 
-We propose to provide a script (`riak-search-upgrade.sh`, or equivalent), which may be optionally be run manually on each Riak node, in a manner described below.  This script may only be run manually by the operator -- there is no support for automating the execution of this script -- and only while the Riak server is not running.  The expectation is that this upgrade script may be run in a "rolling" fashion, first on one node, and then on the next, and so forth.  To eliminate downtime for query, all Yokozuna AAE repair should complete on each node before proceeding to the next node.
+We propose to provide a script (`riak-search-upgrade.sh`, or equivalent), which may be optionally be run manually on each Riak node, in a manner described below.  This script may only be run manually by the operator -- there is no support for automating the execution of this script -- and only while the Riak server is not running.  The expectation is that this upgrade script may be run in a "rolling" fashion, first on one node, and then on the next, and so forth.  To eliminate downtime for query, we propose adding both a configuration setting (`cuttlefish`) and riak-admin command (`clique`) to temporarily disable the node from any coverage plans while the upgrade is in progress.  Once the upgrade is complete (and all searchable Riak buckets have been reindexed), the node may be then re-entered back into the set of nodes that can be part of a cover plan.  The oeprator can then proceed to upgrade the next node, if desired.
+
+The proposed cuttlefish config is:
+
+    {mapping, "search.dist_query.disable", "yokozuna.disable_dist_query", [
+        {default, off},
+        {datatype, flag},
+        hidden
+    ]}.
+
+When `search.dist_query.disable` is set to `true`, then the node is marked as unavailable for distributed query, and will not show up in the cover plan for any query.
+
+The following commands will be added to the `clique` options for the `riak-admin` `search` command:
+
+    shell$ riak-admin search dist_query enable      # disable distributed query for this node
+    shell$ riak-admin search dist_query disable     # enable distributed query for this node
+    shell$ riak-admin search dist_query status      # get the status of distributed query for this node
 
 > Note.  YZ AAE throttling is targeted for Riak 2.2 (https://bashoeng.atlassian.net/browse/RIAK-2626), so operators may optionally control the rate at which Yokozuna AAE repair proceeds.
 
@@ -41,8 +57,11 @@ Indices created prior to the upgrade will continue to function under the Solr 4.
 * Run the Riak Search upgrade script (optionally per core), which will:
     * Upgrade `luceneMatchVersion` to the corresponding Solr 4.10 version
     * Back up (or optionally delete) any previously indexed Solr data
+* Disable the node from cover plans in `riak.conf`
 * Restart Riak
 * Monitor AAE to reindex all Solr cores
+* Re-enable the node from cover plan via `riak-admin`
+* Re-enable the node from cover plans in `riak.conf` (for subsequent reboots)
 
 Under this option, all (or a subset of) indices are upgraded to 4.10.4, and the customer may make use of index and query features of Solr 4.10.4.
 
@@ -56,8 +75,11 @@ If the user chooses Option 1 for upgrade, then:
 * For each index created after the upgrade:
     * Revert the `luceneMatchVersion` in the `solrconfig.xml` for that index to its previous version
     * Delete any previously indexed Solr data
+    * Optionally, revert any previously backed-up Solr data
 * Restart Riak
 * Monitor AAE to reindex all Solr cores
+
+> Note.  During dowgrade, the node will still be available for query, and inconistent search results will occur.
 
 If the user chooses Option 2 for upgrade, then the same procedure is required for downgrade as Option 1, except the changes must be made for _all_ Solr indices that have been upgraded, as well as any indices that were created after the upgrade.
 
@@ -67,29 +89,35 @@ If the user chooses Option 2 for upgrade, then the same procedure is required fo
 
 The following Riak Test (`yz_solr_upgrade_downgrade`) will be implemented as part of this work:
 
-1. Start a single Riak devrel using prev (or specifically 2.0.6 or 2.0.7)
+1. Start a multi-node Riak devrel using prev (or specifically 2.0.6 or 2.0.7), such that each node contains a replica of any given key/value (e.g., 2 node cluster, ring size of 8, `n_val` of 2)
 1. Create a Solr index (index-a)
 1. Populate the index with data
-1. (optional) Verify the data can be effectively queried
-1. Create another Solr index (index-b)
-1. Populate the index with data
-1. (optional) Verify the data can be effectively queried
-1. Upgrade the node to current (specifically, using Solr 4.10)
-1. Verify that the same data can be queried in index-a and index-b
-1. Verify that new data can be added and queried to both indices
-1. Upgrade the index-b `solrconfig.xml` to use the `luceneMatchVersion` that corresponds to Solr 4.10.4
-1. Verify that the same data can be queried in index-b
-1. Verify that new data can be added and queried to index-b
+1. Verify the data can be effectively queried
+1. Create Solr indices: index-b1, index-b2, index-b3
+1. Populate these indices with data
+1. Verify the data can be effectively queried
+1. Upgrade the node to current (specifically, using Solr 4.10).  As part of the upgrade process:
+     * change all index-b* index `solrconfig.xml`s to use the `luceneMatchVersion` that corresponds to Solr 4.10.4
+     * Configure the node so that it is not part of a cover plan (unavailable for query)
+     * Leave index-b1 data in place
+     * Backup/move index-b2 data somewhere
+     * Delete index-b3 data
+1. Verify query works as expected on {Cluster - Node}
+1. Wait for a full AAE round
+1. Add the node back to the cover plan
+1. Verify that the same data can be queried in index-a and index-b*
+1. Verify that new data can be added to and queried from all indices
 1. Create a new Solr index (index-c)
-1. Popular index-c with data, and verify query
+1. Populate index-c with data, and verify query
 1. Downgrade Riak back to previous
 1. Verify that index-a is fully functional; specifically, that it can load, be queried against, and can be written to
 1. Verify that index-b (upgraded) and index-c (new) cannot be loaded
 1. Stop Riak
-1. Revert the `luceneMatchVersion` for index-b and index-c
-1. Delete any previously indexed data
+1. Revert the `luceneMatchVersion` for index-b* and index-c.  In addition:
+    * Delete any previously indexed data for `index-b1` and `index-b3`
+    * Restore backed-up data for `index-b2`
 1. Restart Riak, and wait for AAE to reindex all data
-1. Verify expected results.
+1. Verify _all_ previously written data (including data written after the upgrade) is avaialble in all indices.
 
 ### References
 
