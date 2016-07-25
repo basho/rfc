@@ -8,6 +8,11 @@ This RFC address access paths for the query system - it arises from discussions 
 
 To provide an analytical framework for discussion of access paths. The query rewriter is about to start being a real, complex CS thing. Time to go full Wayne Gretzky - skate to where the puck is going to be...
 
+This RFC MUST enable:
+* members of the TS team to contribute to discussions, architecture, design and implementation of new query paths
+* members of the KV team to contribute to discussions, research, architecture, design and implementation of post-merge query paths
+* members of the product team to identify new ways to use existing infrastructure more optimaly and take query options out to customers and prioritise the roadmap
+
 ## Scope
 
 The scope of this RFC is split in 3:
@@ -32,6 +37,7 @@ The current TS Queries are:
 Roadmap overview for TS:
 * streaming queries
 * coverage plan queries
+* queries requiring temporary or snapshot śtables
 * full cluster scan (needed for proper GROUP BY)
 * 2i index paths for Time Series
 
@@ -1142,6 +1148,86 @@ Choosing between the two execution modes (Streaming Vs Coverage Plan) might depe
 * performance heuristics of both approaches
 * if the requirement for returning results in natural key order is a hard requirement
 * there are query processing optimisations that could be performed if natural sort order was to be maintained
+
+### Future TS Queries That Require Temporary And Snapshot Tables
+
+There is a requirement in TS for some sort of memory-to-disk spill to cope with queries whose execution path cannot be done in constrained memory.
+
+An example of this is a query containing an ORDER BY clause - the data returned from all the vnodes must be subject to a final sort in a co-ordinating node - so there is no streaming execution path. The no of records of the dataset to be returned tends asymptotically to the number of records in the bucket as the cardinality of the field on which the GROUP BY is being executed increases.
+
+This type of memory-to-disk-spill shall be refered to as a **temporary table** - an on-disk data structure which is not queryable directly by the end user - it is merely an artifact used in the fulfillment of a pre-existing query.
+
+The existance of such a facility however, opens up the possibility of such a table which is queryable - this shall be refered to as a **snapshot table**.
+
+Temporary and snapshot tables work by creating a leveldb table on a single physical riak node - the same node as the query coordinator process, and persisting interim data into that whilst the query executes - and then applying a finalise query to that table to return the relevant results to the end-user:
+
+First up a query is run and the result set is persisted locally:
+
+```
+  ┌─────────┐       ┌─────────┐                                           ┌─────────┐
+  │         │       │  Local  │             ┌────────────────────┐        │         │
+  │Vnode 14 │       │ leveldb │             │Execute an arbitrary│        │ Vnode 1 │
+  │         │       │  Table  │             │ query at the ring  │        │         │
+  └─────────┘       └─────────┘             │  and persist the   │        └─────────┘
+                         ▲                  │  results locally   │
+  ┌─────────┐                               └────────────────────┘        ┌─────────┐
+  │         │            │                                                │         │
+  │Vnode 13 │        Persist                                              │ Vnode 2 │
+  │         │         Result                                              │         │
+  └─────────┘          Set                                                └─────────┘
+                         │
+  ┌─────────┐                                                             ┌─────────┐
+  │         │            │                                                │         │
+  │Vnode 12 │                                                             │ Vnode 3 │
+  │         │            │                                                │         │
+  └─────────┘                                                             └─────────┘
+                     Request    ════╦═════════════╦══════════════╗
+  ┌─────────┐                       ║             ║              ║        ┌─────────┐
+  │         │                       ║             ║              ║        │         │
+  │ Vnode11 │                       ║             ║              ║        │ Vnode 4 │
+  │         │                       ║             ║              ║        │         │
+  └─────────┘                       ║             ║              ║        └─────────┘
+                                    ▼             ▼              ▼
+  ┌─────────┐   ┌─────────┐    ┌─────────┐   ┌─────────┐    ┌─────────┐   ┌─────────┐
+  │         │   │         │    │         │   │         │    │         │   │         │
+  │Vnode 10 │   │ Vnode 9 │    │ Vnode 8 │   │ Vnode 7 │    │ Vnode 6 │   │ Vnode 5 │
+  │         │   │         │    │         │   │         │    │         │   │         │
+  └─────────┘   └─────────┘    └─────────┘   └─────────┘    └─────────┘   └─────────┘
+```
+
+Then a finalise query is run on the locally persisted data and the results of that are returned to the end-user:
+
+```
+  ┌─────────┐      ┌─────────┐              ┌────────────────────┐        ┌─────────┐
+  │         │      │  Local  │              │ Execute a finalise │        │         │
+  │Vnode 14 │      │ leveldb │              │    query on the    │        │ Vnode 1 │
+  │         │      │  Table  │              │    temporary or    │        │         │
+  └─────────┘      └─────────┘              │   snapshot table   │        └─────────┘
+                        ▲                   └────────────────────┘
+  ┌─────────┐           ║                                                 ┌─────────┐
+  │         │           ║                                                 │         │
+  │Vnode 13 │         Run                                                 │ Vnode 2 │
+  │         │       Finalise                                              │         │
+  └─────────┘        Query                                                └─────────┘
+                        ║
+  ┌─────────┐           ║                                                 ┌─────────┐
+  │         │           ║                                                 │         │
+  │Vnode 12 │           ║                                                 │ Vnode 3 │
+  │         │           ║                                                 │         │
+  └─────────┘                                                             └─────────┘
+                    Request
+  ┌─────────┐                                                             ┌─────────┐
+  │         │                                                             │         │
+  │ Vnode11 │                                                             │ Vnode 4 │
+  │         │                                                             │         │
+  └─────────┘                                                             └─────────┘
+
+  ┌─────────┐   ┌─────────┐    ┌─────────┐   ┌─────────┐    ┌─────────┐   ┌─────────┐
+  │         │   │         │    │         │   │         │    │         │   │         │
+  │Vnode 10 │   │ Vnode 9 │    │ Vnode 8 │   │ Vnode 7 │    │ Vnode 6 │   │ Vnode 5 │
+  │         │   │         │    │         │   │         │    │         │   │         │
+  └─────────┘   └─────────┘    └─────────┘   └─────────┘    └─────────┘   └─────────┘
+```
 
 ### Future TS Full Cluster Scans
 
