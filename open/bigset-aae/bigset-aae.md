@@ -341,7 +341,7 @@ the [2i AAE tree][riak-kv-2i-aae-idx-data], but seems like a bad idea, as we'll
 be updating the digest on the fly.
 
 It should be separately stored, and it looks like a *dot-cloud* as per the
-literature and [Bigsets code/doc][bs-bigset-clock-hd]:
+literature and [Bigsets-Clock format rfc][bs-bigset-clock-rfc]:
 
 ```erlang
  Clock1 = {[{a, 10}, {b, 3}, {d, 4}], %%base vv of clock1
@@ -481,7 +481,7 @@ for each real-time update. How do best to do this in LevelDB?
 [set-complement-wiki]: https://en.wikipedia.org/wiki/Complement_(set_theory) "Complement (set theory)"
 [set-intersection-wiki]: https://en.wikipedia.org/wiki/Intersection_(set_theory) "Intersection (set theory)"
 [riak-kv-2i-aae-idx-data]: https://github.com/basho/riak_kv/blob/develop/src/riak_kv_2i_aae.erl#L428 "fetch_index_data in Riak KV 2i AAE"
-[bs-bigset-clock-hd]: https://github.com/basho-bin/bigsets/blob/ab5712fc3435466c0fbabdf9f552c44c6ccbb76a/doc/bigsets-design.md#68-bigset-clock "Bigset Clock in Design Doc"
+[bs-bigset-clock-rfc]: https://github.com/basho/rfc/pull/10/files "Bigset Clock Format RFC"
 
 [hashtree-img]: images/hashtree.jpg
 [insert+dirty-img]: images/insert+dirty.jpg
