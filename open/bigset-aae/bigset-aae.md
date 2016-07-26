@@ -21,7 +21,9 @@ repairs start happening or during larger during tree rebuilds.
 
 We *really* want AAE *on* for Bigsets, and when sets get *big*
 (e.g. 100 million keys) the cost of many repairs or full rebuilds of all the
-keys could become a real bottleneck.
+keys could become a real bottleneck. Additionally, Bigsets *already* decomposes
+all the keys on disk. If we stored every set element as a key in a riak_kv
+hashtree as well, we'd have two sets of the same data on disk! Uh-oh!
 
 So, the goal is implement a simpler model around detecting divergence, using
 the set clock/dot information we have, while sending only what's needed over the
@@ -153,10 +155,16 @@ this approach probably wouldn't work best in Riak.
 
 ### Proposal
 
-##### Not using AAE as we know it today in KV
+##### A Different Approach to AAE compared to KV?
 
-I covered most of the reasons in the [Abstract](#abstract), and I think our
-proposed solution is a nice, compromising approach.
+I covered most of the reasons of why we're doing something different in the
+[Abstract](#abstract), and I think our proposed solution is a nice compromise.
+Though it's a different approach, it doesn't mean we can't tie-in with KV
+at exchange-time and implement some of the new trigger/tracking ideas I mention
+below more generally. We may use [different
+trees](#hash-digests-in-a-merkle-tree) and/or provide a separate interface at
+points (e.g. entropy manager), but these details will become elucidated as the
+work starts.
 
 ##### Building and Exchanging Digests (+ bs-clock)
 
@@ -303,10 +311,9 @@ for what we need to repair. I like this for two main reasons:
 sending the digest+clock vs when sending over the element-keys
 * More optimization opportunities for sending partials on larger sets
 
-##### Store Digests via Merkle Tree - Divergence Detection
+##### Divergence Detection & Storing Digests
 
-Just like with KV AAE, we should store these digests on disk so as to avoid
-frequently rebuilding them or stuffing them in memory every time.
+###### Hash digests in a merkle tree
 
 Much of the anti-entropy literature depends on a constant, periodic *round*, but
 we also do not want to have to send digests around if we don't have to. So, why
@@ -317,10 +324,32 @@ hashtrees per index-hashtree gen_server process. We'd do the same thing for
 our digests, but instead of inserting/updating *Key->Riak object hash*, we'd
 store it as *Set Name->Digest hash*. Remember, ***Set Names* are unique**.
 
-Storing them in the Merkle Tree gives us all the properties
+Storing digest hashes in the Merkle Tree gives us all the properties
 [we know about](#aae-in-riak) for detecting divergence. **We'd trigger
 checks per-partition, bigsets per-partition/vnode, as there would be
 more than one, containing *Set Name*->*Digest hash* pairs**.
+
+###### How to store it?
+
+Just like with KV AAE, we should store these digests on disk so as to avoid
+frequently rebuilding them or stuffing them in memory every time.
+
+What does this data structure look like? Good question, it's an [open
+one](#handling-continuous-updates-to-digest) below. Since the hash in the
+hashtree is the digest, we could deserialize it like we do with index data in
+the [2i AAE tree][riak-kv-2i-aae-idx-data], but seems like a bad idea, as we'll
+be updating the digest on the fly.
+
+It should be separately stored, and it looks like a *dot-cloud* as per the
+literature and [Bigsets code/doc][bs-bigset-clock-hd]:
+
+```erlang
+ Clock1 = {[{a, 10}, {b, 3}, {d, 4}], %%base vv of clock1
+           [{b, [5,6]}, {c, [13]}, {d, [6,7]}]}, %% dot cloud 1
+```
+
+Again, **open question**, but would this representation be more efficiently
+stored per actor, or can we compact this nicely?
 
 ##### Throttling
 
@@ -394,7 +423,7 @@ trigger interval, churning more/less in a less-strict approach.
 
 ### Open Questions / Issues
 
-##### Resilience
+##### Resilience?
 
 - How do we enact anti-entropy for *silent* failures / *accidental* dataloss
   around losing element-keys on disk or valuable metadata? If some element-key
@@ -407,13 +436,15 @@ trigger interval, churning more/less in a less-strict approach.
 - How do we provide invariants for knowing that the stored digest is correct and
   not allowing for the propagation of the *wrong* events?
 
-##### Monitoring AAE
+##### Monitoring AAE?
 
 What do we want beyond something like `riak-admin aae-status`?
 
-##### Handling Continuous Updates to Digest
+##### Handling Continuous Updates to Digest?
 
-How best to do this in LevelDB?
+What's the on-disk data structure look like for a digest? We don't want to
+constantly deserialize a dict/ordict or gbtree data structure in Erlang
+for each real-time update. How do best to do this in LevelDB?
 
 ### References
 
@@ -449,6 +480,8 @@ How best to do this in LevelDB?
 [scuttle-demo]: http://awinterman.github.io/simple-scuttle/ "Scuttle Demo"
 [set-complement-wiki]: https://en.wikipedia.org/wiki/Complement_(set_theory) "Complement (set theory)"
 [set-intersection-wiki]: https://en.wikipedia.org/wiki/Intersection_(set_theory) "Intersection (set theory)"
+[riak-kv-2i-aae-idx-data]: https://github.com/basho/riak_kv/blob/develop/src/riak_kv_2i_aae.erl#L428 "fetch_index_data in Riak KV 2i AAE"
+[bs-bigset-clock-hd]: https://github.com/basho-bin/bigsets/blob/ab5712fc3435466c0fbabdf9f552c44c6ccbb76a/doc/bigsets-design.md#68-bigset-clock "Bigset Clock in Design Doc"
 
 [hashtree-img]: images/hashtree.jpg
 [insert+dirty-img]: images/insert+dirty.jpg
