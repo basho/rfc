@@ -5,7 +5,7 @@
 
 - [ ] [Brett Hazen](@javajolt)
 - [ ] [John Daily](@mactintux)
-- [ ] Rando from architecture
+- [X] [Gordon Guthrie] (@gordonguthrie)
 - [ ] Your name here.
 
 ### Definition
@@ -19,6 +19,8 @@ CREATE TABLE tasks (
     name VARCHAR NOT NULL,
     project VARCHAR NOT NULL,
     completed TIMESTAMP NOT NULL,
+    subtask VARCHAR NOT NULL,
+    duration SINT64 NOT NULL,
     PRIMARY KEY((name,project,quantum(completed,1,'m')),name,project,completed)
 );
 ```
@@ -28,6 +30,7 @@ The query below returns one column per unique project and counts how many rows h
 ```
 SELECT project, COUNT(name)
 FROM tasks
+WHERE completed > 1 AND completed < 1000 AND name = 'wheels' AND project = 'Mars Rover'
 GROUP BY project
 ```
 
@@ -37,26 +40,38 @@ Other variations.
 /* Any number of groups, order has no effect */
 SELECT project, COUNT(name)
 FROM tasks
+WHERE completed > 1 AND completed < 1000 AND name = 'wheels' AND project = 'Mars Rover'
 GROUP BY project, name
 
 /* BEWARE of using a timestamp in the group, this can lead to a very large
    number of groups because it is likely to be unique */
 SELECT project, name, completed
 FROM tasks
+WHERE completed > 1 AND completed < 1000 AND name = 'wheels' AND project = 'Mars Rover'
 GROUP BY project, name, completed
 
 /* Columns do not have to be specified, any combination aggregate functions
    can be used */
 SELECT COUNT(name)
 FROM tasks
+WHERE completed > 1 AND completed < 1000 AND name = 'wheels' AND project = 'Mars Rover'
 GROUP BY project, name
 
-/* The column "completed" is not int he group clause but can be used
+/* The column "completed" is not in the group clause but can be used
    as a function argument */
 SELECT project, COUNT(completed)
 FROM tasks
+WHERE completed > 1 AND completed < 1000 AND name = 'wheels' AND project = 'Mars Rover'
 GROUP BY project
+
+
+/* the grouping column doesn't have to be in the key */
+SELECT AVG(duration)
+FROM tasks
+WHERE completed > 1 AND completed < 1000 AND name = 'wheels' AND project = 'Mars Rover'
+GROUP BY subtask
 ```
+
 
 There is no guaranteed order for rows returned by `GROUP BY`, `ORDER BY` provides this.
 
@@ -67,6 +82,7 @@ There is no guaranteed order for rows returned by `GROUP BY`, `ORDER BY` provide
 ```sql
 SELECT COUNT(project)
 FROM table1
+WHERE completed > 1 AND completed < 1000 AND name = 'datacentre' AND project = 'Mars Rover'
 GROUP BY project
 ```
 
@@ -114,13 +130,58 @@ The `GROUP BY` key for the row would be `[<<"groupby">>, <<"TS">>]`.
 
 There is no special overload protection for queries using GROUP BY. It is not possible to put them into temporary tables because the accumulated groups all need to be in memory to be group on when processing new rows.
 
-### Future Work
+### Future Work I
 
 This proposal specifies how result sets from several vnodes can be grouped in the coordinator. The result set for each sub query could be grouped in the vnode before it was sent to the coordinator.  This could dramatically reduce the sub query result set as rows get grouped, and columns that are not referenced in the select clause are dropped. The savings being the network cost of sending an unprocessed result set and encoding/decoding it. If the group specification has many unique columns the saving will not be so great.
 
 This is not being attempted now because the design for having the vnode and leveldb process results in general doesn't have a design yet.
 
 ![GROUP BY Sequence Diagram](groupby_vnode.png)
+
+```sql
+[$vnode-select =
+    SELECT project, COUNT(project) AS InterimCount
+    FROM table1
+    WHERE name = 'wheels' AND project = 'Mars Rover' AND completed > 230000 AND completed completed < 330000
+]
+
+[$finalise =
+    SELECT SUM(InterimCount) AS 'COUNT(project)'
+    FROM [$vnode-select]
+    GROUP BY project
+]
+```
+
+Because not all the Windows Aggregation functions commute with partition across vnodes specific query rewriter paths would have to be created for all of them:
+
+* `COUNT`
+* `SUM`
+* `AVG`
+* `MEAN`
+* `MIN`
+* `MAX`
+* `STDDEV`
+* `STDDEV_POP`
+* `STDDEV_SAMP`
+
+### Future Work II
+
+A variant of the previous version is to implement selection at the vnode alone. This variant would be of general performance benefit across all queries.
+
+```sql
+[$vnode-select =
+    SELECT project, subtask
+    FROM table1
+    WHERE name = 'wheels' AND project = 'Mars Rover' AND completed > 230000 AND completed completed < 330000
+]
+
+[$finalise =
+    SELECT COUNT(subtask)
+    FROM [$vnode-select]
+    GROUP BY project
+]
+```
+
 
 ### References
 
