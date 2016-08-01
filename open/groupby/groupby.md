@@ -152,7 +152,7 @@ This is not being attempted now because the design for having the vnode and leve
 ]
 ```
 
-Because not all the Windows Aggregation functions communute with partition across vnodes specific query rewriter paths would have to be created for all of them:
+Because not all the Windows Aggregation functions commute with partition across vnodes specific query rewriter paths would have to be created for all of them:
 
 * `COUNT`
 * `SUM`
@@ -166,7 +166,7 @@ Because not all the Windows Aggregation functions communute with partition acros
 
 ### Future Work II
 
-A variant of the previous version is to implement selection a the vnode alone. This variant would be of general performance benefit across all queries.
+A variant of the previous version is to implement selection at the vnode alone. This variant would be of general performance benefit across all queries.
 
 ```sql
 [$vnode-select =
