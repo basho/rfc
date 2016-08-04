@@ -4,6 +4,20 @@
 
 This RFC address access paths for the query system - it arises from discussions and musings at the Query Team Meetup Ukraine.
 
+## Requested Reviewers
+
+[ ] [Russell Brown](@russelldb)
+[ ] [John Daily](@mactintux)
+[ ] [Pavel Hardak](@ph07)
+[ ] [Brett Hazen](@javajolt)
+[ ] [Torben Hoffman](@lehoff)
+[ ] [Sean Jensen-Gray](@seanjensengray)
+[ ] [Zeeshan Lakhani](@zeeshanlakhani)
+[ ] [Andy Till](@andytill)
+[ ] [Charlie Voiselle](@andgrycub)
+[ ] [Matthew Von-Maszewski](@matthewvon)
+[ ] [Andrei Zavada](@hmmrr)
+
 ## Purpose
 
 To provide an analytical framework for discussion of access paths. The query rewriter is about to start being a real, complex CS thing. Time to go full Wayne Gretzky - skate to where the puck is going to be...
@@ -61,7 +75,7 @@ This RFC focusses on the **physical** aspects of queries:
 * which ranges of data on disk they touch
 
 The **logical** definition of TS SQL queries is defined here:
-* [https://github.com/basho/riak_ql/blob/develop/docs/the_query_pipeline.md](Query Pipeline Documentation)
+* [Query Pipeline Documentation](https://github.com/basho/riak_ql/blob/develop/docs/the_query_pipeline.md)
 
 ## Quality Statement
 
