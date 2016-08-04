@@ -8,10 +8,10 @@ This RFC address access paths for the query system - it arises from discussions 
 
 To provide an analytical framework for discussion of access paths. The query rewriter is about to start being a real, complex CS thing. Time to go full Wayne Gretzky - skate to where the puck is going to be...
 
-This RFC MUST enable:
-* members of the TS team to contribute to discussions, architecture, design and implementation of new query paths
-* members of the KV team to contribute to discussions, research, architecture, design and implementation of post-merge query paths
-* members of the product team to identify new ways to use existing infrastructure more optimaly and take query options out to customers and prioritise the roadmap
+This RFC MUST enable members of the:
+* TS team to contribute to discussions, architecture, design and implementation of new query paths
+* KV and Big Sets teams to contribute to discussions, research, architecture, design and implementation of post-merge query paths
+* Product team to identify new ways to use existing infrastructure more optimally and take query options out to customers and prioritise the roadmap
 
 ## Scope
 
@@ -37,9 +37,12 @@ The current TS Queries are:
 Roadmap overview for TS:
 * streaming queries
 * coverage plan queries
-* queries requiring temporary or snapshot śtables
+* queries requiring temporary or snapshot tables
 * full cluster scan (needed for proper GROUP BY)
 * 2i index paths for Time Series
+
+Outstanding TS issues:
+* read-repair/anti-entropy
 
 Speculative future queries:
 * BigSets/BigMaps/Afrika queries
@@ -50,6 +53,15 @@ Speculative future queries:
 Capturing statistics about data cardinality etc, to drive heuristic determination of query plans.
 
 **NOTE** Coverage Plans typically 'loop around themselves' covering all keyspaces for all vnodes *except for the last one* to which filters are applied. Where ever this document talks about at-vnode access patterns for query paths that use coverage plans they discuss the *normal case* and elide the special 'last vnode' filtered case for ease of exposition.
+
+## Relationship To Other Documents
+
+This RFC focusses on the **physical** aspects of queries:
+* which nodes they touch
+* which ranges of data on disk they touch
+
+The **logical** definition of TS SQL queries is defined here:
+* [https://github.com/basho/riak_ql/blob/develop/docs/the_query_pipeline.md](Query Pipeline Documentation)
 
 ## Quality Statement
 
@@ -129,7 +141,7 @@ Lets understand this diagram in more detail. Each vnode contains three sorts of 
 * normal KV data and Time Series data - prefix `o`
 * 2i index data - prefix `i`
 
-**NOTE** there was a long discussion about prefix TS data with a `c` for composite key - but at decision was taken to just stick with `o`. We are trying to reconstruct the rationale for that and think it might have been that TS and KV were to be seperate products. We need to revist this decision as a matter of urgency in the great merge discussion.
+**NOTE** there was a long discussion about prefix TS data with a `c` for composite key - but at decision was taken to just stick with `o`. We are trying to reconstruct the rationale for that and think it might have been that TS and KV were to be separate products. We need to revisit this decision as a matter of urgency in the great merge discussion.
 
 Each of these areas is divided into buckets. 2i indices are only used with KV buckets, so the 2i buckets correspond to the KV buckets for which data has been written with a 2i index.
 
@@ -346,6 +358,8 @@ Now let us look at an index GET:
 
 In order to reconstruct a key list of all entries that are in the index - every keyspace must be consulted - via a coverage plan. This is because the 2i index is written local to the key on the same vnode/keyspace.
 
+With an n_val of three a coverage plan **approximates** to every third vnode.
+
 However the read is done with r = 1 - meaning that if the ring is in handoff you will not get consistent results:
 
 ```
@@ -358,7 +372,7 @@ However the read is done with r = 1 - meaning that if the ring is in handoff you
                    └──────────────────┘               ║
   ┌─────────┐                                         ║                   ┌─────────┐
   │         │    ╔════   Request    ══════════════════╣                   │         │
-  │ Vnode11 │    ║                                    ║                   │ Vnode 2 │
+  │Vnode 11 │    ║                                    ║                   │ Vnode 2 │
   │         │    ║           ║                        ║                   │         │
   └─────────┘    ║           ║                        ║                   └─────────┘
                  ║           ║                        ║
@@ -526,7 +540,7 @@ List buckets is even more intrusive than list keys:
                                                           ▼    ▼
 ```
 
-List buckets uses a coverage plan of some sort - not sure how it can do that effectively - perhaps it assumes a default n_val of 3, or perhaps it just has an 'all vnodes' coverage plan (it hardly seems worth while to spend a lot of time spelunking it because it is **sooooo** not production):
+List buckets uses a coverage plan of some sort - not sure how it can do that effectively - perhaps it assumes a default n_val of 3, or perhaps it just has an 'all vnodes' coverage plan (it hardly seems worthwhile to spend a lot of time spelunking it because it is **sooooo** not production):
 
 ```
   ┌─────────┐       ┌──────────────────┐                                  ┌─────────┐
@@ -1155,9 +1169,9 @@ There is a requirement in TS for some sort of memory-to-disk spill to cope with 
 
 An example of this is a query containing an ORDER BY clause - the data returned from all the vnodes must be subject to a final sort in a co-ordinating node - so there is no streaming execution path. The no of records of the dataset to be returned tends asymptotically to the number of records in the bucket as the cardinality of the field on which the GROUP BY is being executed increases.
 
-This type of memory-to-disk-spill shall be refered to as a **temporary table** - an on-disk data structure which is not queryable directly by the end user - it is merely an artifact used in the fulfillment of a pre-existing query.
+This type of memory-to-disk-spill shall be referred to as a **temporary table** - an on-disk data structure which is not queryable directly by the end user - it is merely an artifact used in the fulfillment of a pre-existing query.
 
-The existance of such a facility however, opens up the possibility of such a table which is queryable - this shall be refered to as a **snapshot table**.
+The existence of such a facility however, opens up the possibility of such a table which is queryable - this shall be referred to as a **snapshot table**.
 
 Temporary and snapshot tables work by creating a leveldb table on a single physical riak node - the same node as the query coordinator process, and persisting interim data into that whilst the query executes - and then applying a finalise query to that table to return the relevant results to the end-user:
 
@@ -1218,7 +1232,7 @@ Then a finalise query is run on the locally persisted data and the results of th
                     Request
   ┌─────────┐                                                             ┌─────────┐
   │         │                                                             │         │
-  │ Vnode11 │                                                             │ Vnode 4 │
+  │Vnode 11 │                                                             │ Vnode 4 │
   │         │                                                             │         │
   └─────────┘                                                             └─────────┘
 
@@ -1350,9 +1364,9 @@ These queries requires a full bucket scan on all vnodes - so are distributed by 
                 └─────────┘   └─────────┘    └─────────┘   └─────────┘
 ```
 
-The major red flag is that we have a TS roadmap product process that keeps pushing us towards full-coverage cluster scan queries - even though we know that all the other full-coverage cluster-scan access paths are explicity ruled out for production clusters.
+The major red flag is that we have a TS roadmap product process that keeps pushing us towards full-coverage cluster scan queries - even though we know that all the other full-coverage cluster-scan access paths are explicitly ruled out for production clusters.
 
-Following our existing deployment guidelines a these queries should only be run on a non-production cluster on the other side of an MDC link. Should we not change our product/pricing processes WRT to TS to accomodate this?
+Following our existing deployment guidelines a these queries should only be run on a non-production cluster on the other side of an MDC link. Should we not change our product/pricing processes WRT to TS to accommodate this?
 
 
 ### Future TS 2i Index Queries
@@ -1369,7 +1383,7 @@ CREATE TABLE mytable (
     PRIMARY KEY  ((family, series, quantum(time, 1, 's')), family, series, time))
 ```
 
-**NOTE**: this syntax is an undesigned example of how you **might* do it, not a statement of design.
+**NOTE**: this syntax is an undesigned example of how you **might** do it, not a statement of design.
 
 The PUT would be the same as a standard KV PUT with 2i.
 
@@ -1377,7 +1391,7 @@ An index read would be a 2-part
 
 First GET would be a coverage plan to read the indices - the same as a distribution of queries on the ring as a Full Cluster read - except instead of scanning the key space it would return a list of keys that match the index.
 
-The second GET would be a set of individual queries to the appropriate vnodes (bundled up?). Because the key set returned by the index read contains the natural sort order - these queries **COULD** be executed in natural sort order: that would require multiple visits to a single vnode however - which is likely to be inefficient. A simpler mechanism my query the vnodes and get all matches per vnode - these result sets could be combined in a local temporary table to create the natural sort order.
+The second GET would be a set of individual queries to the appropriate vnodes (bundled up?). Because the key set returned by the index read contains the natural sort order - these queries **COULD** be executed in natural sort order: that would require multiple visits to a single vnode however - which is likely to be inefficient. A simpler mechanism may query the vnodes and get all matches per vnode - these result sets could be combined in a local temporary table to create the natural sort order.
 
 Some class of heuristics might choose between these execution paths...
 
@@ -1444,9 +1458,15 @@ Some class of heuristics might choose between these execution paths...
                 └─────────┘    └─────────┘   └─────────┘    └─────────┘
 ```
 
-**NOTE** it is not clear to me how indexes are actually written - and what the cost of them is. Is a 2i index just a key consisting of the index value and a value being a list of all keys that contain that value? What are the relevent costs of adding an entry to an index or removing it?
+**NOTE** it is not clear to me how indexes are actually written - and what the cost of them is. Is a 2i index just a key consisting of the index value and a value being a list of all keys that contain that value? What are the relevant costs of adding an entry to an index or removing it?
 
 ---
+
+## TS Read-repear, anti-entropy
+
+Because TS queries don't return riak_objects, only matrices of rows with a column header vector - there is no read repair triggered. We request n_val sets of data and accept the first one.
+
+We should consider building read-repair - perhaps checksumming chunks, and checking those first - triggering anti-entropy on any that are out of sync as part of the query process?
 
 ## Future BigSet/BitMap Queries
 
@@ -1468,7 +1488,7 @@ This pseudo-keying can be logically extended as shown in the Afrika prototype.
 
 The partition key `setid` points to the set on the ring and the local key `{setid, itemid}` is used to identify a particular item of the set - whose value is stored in `value`.
 
-**NOTE**: this is a **logical** picture - the actual physical implementation is *slightly* more complex.
+**NOTE**: this is a **logical** picture - the actual physical implementation is *slightly* more complex ;-)
 
 We can generically consider that BigSets/BigMaps have at-vnode access patterns similar to TS:
 
@@ -1939,7 +1959,10 @@ Assessing the performance of a index queries, whether or not they hotspot the cl
 We need to asses how we assemble histograms to feed the query rewriter based on the data:
 * on ingress - keep data histograms up to date
 * in a map reduce job - build (and/or rebuild) the histograms
-* some combination of the two - build a histogram state ab initio and then maintain it with ingress data
+* some combination of the two - build a histogram state *ab initio* and then maintain it with ingress data
+
+TODO:
+* understand Pavel Hardak and Sean Jensen-Gray's CRDT register of quanta's written - and understand how that could be used in a query engine
 
 ---
 
