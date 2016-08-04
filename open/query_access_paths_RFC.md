@@ -6,18 +6,18 @@ This RFC address access paths for the query system - it arises from discussions 
 
 ## Requested Reviewers
 
-[ ] [Russell Brown](@russelldb)
-[ ] [John Daily](@mactintux)
-[ ] [Pavel Hardak](@ph07)
-[ ] [Brett Hazen](@javajolt)
-[ ] [Torben Hoffman](@lehoff)
-[ ] [Sean Jensen-Gray](@seanjensengray)
-[ ] [Zeeshan Lakhani](@zeeshanlakhani)
-[ ] [Doug Roher](@jeetkundoug)
-[ ] [Andy Till](@andytill)
-[ ] [Charlie Voiselle](@andgrycub)
-[ ] [Matthew Von-Maszewski](@matthewvon)
-[ ] [Andrei Zavada](@hmmrr)
+* [ ] [Russell Brown](@russelldb)
+* [ ] [John Daily](@mactintux)
+* [ ] [Pavel Hardak](@ph07)
+* [ ] [Brett Hazen](@javajolt)
+* [ ] [Torben Hoffman](@lehoff)
+* [ ] [Sean Jensen-Gray](@seanjensengray)
+* [ ] [Zeeshan Lakhani](@zeeshanlakhani)
+* [ ] [Doug Roher](@jeetkundoug)
+* [ ] [Andy Till](@andytill)
+* [ ] [Charlie Voiselle](@andgrycub)
+* [ ] [Matthew Von-Maszewski](@matthewvon)
+* [ ] [Andrei Zavada](@hmmrr)
 
 ## Purpose
 
