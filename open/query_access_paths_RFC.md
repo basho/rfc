@@ -13,6 +13,7 @@ This RFC address access paths for the query system - it arises from discussions 
 [ ] [Torben Hoffman](@lehoff)
 [ ] [Sean Jensen-Gray](@seanjensengray)
 [ ] [Zeeshan Lakhani](@zeeshanlakhani)
+[ ] [Doug Roher](@jeetkundoug)
 [ ] [Andy Till](@andytill)
 [ ] [Charlie Voiselle](@andgrycub)
 [ ] [Matthew Von-Maszewski](@matthewvon)
