@@ -72,6 +72,9 @@ For example:
       Actor:ActorLen/binary,
       Cnt:64/integer>>`
 
+NOTE: We don't plan on having bucket-types/buckets for bigsets. The Bucket is the set.
+Maybe we _should_ have types though, in which case, that needs adding to the key above.
+
 The aim here is to allow bigset data to be stored in the same backend
 as existing Riak datatypes, but to be logically separated by leveldb.
 
