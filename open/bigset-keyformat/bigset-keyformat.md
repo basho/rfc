@@ -6,10 +6,9 @@
 the keys to maintain sort order on disk has been shown to impact read
 performance disastrously. The Bigset prototype encodes keys into
 erlang binaries and uses a custom C++ comparator to maintain order on
-disk. We would like to use this technique in production with Bigset
+disk. We would like to avoid sext encoding in production with Bigset
 code merged into Riak. This means coming up with a production ready
-key-scheme that "plays nice" with existing data, and a
-[comparator][comparator] that likewise is backward compatible.
+key-scheme that "plays nice" with existing data.
 
 ### Background
 
@@ -36,7 +35,7 @@ there will be riak_object data, riak index data, and TS data.
 
 Riak Keys, TS keys, and Index keys are all sext encoded. As TS data is
 riak_object data, at this point I will stop distinguishing between the
-two and just use "RO keys.
+two and just use "RO keys".
 
 Part of the way bigset reads work is to fold over all the keys in a
 set. We seek to a set's first key (the clock) and we fold until it's
@@ -54,40 +53,43 @@ evolve it over time.
 Update the key format to:
 
 - include a special byte that distinguishes the bigset keys as bigset
-    keys.
+    keys, this should sort lower than legacy riak data.
 - include a version signifier for the key format/data
-- update the comparator to "pass through" to the existing default
-  comparator for non-bigset data
-- use said comparator by default for all leveldb databases in Riak
+- drop the need for a comparator by using NULL terminated strings
+  (thanks to MvM!)
 
 For example:
 
     <<MagicBigsetByte:1/binary,
-      VersionByte:8/integer,
-      SetNameLen:32/integer,
-      SetName:SetNameLen/binary,
-      ElementLen:32/integer,
-      Element:ElementLen/binary,
-      ActorLen:32/integer,
-      Actor:ActorLen/binary,
-      Cnt:64/integer>>`
+      VersionByte:8/big-unsigned-integer,
+      SetName/binary,
+      $\0,
+      %% one of $c, $d, $e, $z
+      %% for clock, tombstone, element, and end key
+      TypeByte:1/binary,
+      Element/binary,
+      $\0,
+      Actor/binary,
+      $\0,
+      Cnt:64/big-unsigned-integer>>`
 
 The aim here is to allow bigset data to be stored in the same backend
 as existing Riak datatypes, but to be logically separated by leveldb.
+
+Each "field" of the key is separated by a null byte. Where a field is
+absent (for example, clocks don't have elements, and end_keys don't
+have actors) they are simply ommitted but the terminating null byte
+remains.
 
 If the bigset data is separate then all existing riak code should work
 as though it were not there. Hand off folding, key listing, 2i folding
 all start with the first `{o, B, K}` or `{i, B, I, T, K}` key. If we
 sort bigset data _LOWER_ than existing data, it will not be touched by
 existing folds. The existing sext encoded keys all seem to start with
-the byte `<<16>>`. We should avoid that byte.
-
-The comparator can check the first byte of a key, if it is
-`<<MagicBigsetByte>>` it sorts lower, and the bigset comparator is
-used, else, pass through to the default leveldb comparator.
+the byte `<<16>>`. We should avoid that byte and above.
 
 Further, individual bigset element keys will not be accessible by the
-KV get/put path (a free bonus.)
+KV get/put/delete path (a free bonus.)
 
 We would need to "teach" Riak's folds (for hand-off, MDC etc) about
 bigset data.
@@ -117,11 +119,11 @@ data, which makes the backend call simpler to plumb in.
 
 #### Downgrades?
 
-What happens to this bigset data on disk when a leveldb
-node is downgraded? I suggest we test, but I imagine it will sort in
-such a way that it may become "intertwingled" with RO and Index
-data. Must bigset data be deleted before downgrades? Or will it sort
-"out of the way" and be left to rot?
+What happens to this bigset data on disk when a leveldb node is
+downgraded? I suggest we test, but it will sort in such a way that it
+does not become "intertwingled" with RO and Index data. Must bigset
+data be deleted before downgrades? Or will sorting "out of the way"
+mean it is just left on disk?
 
 Some operations carry a "no downgrades" warning (bucket types for
 example) so there is precedence for that.
@@ -131,4 +133,3 @@ example) so there is precedence for that.
 See the existing [bigset][bigset] design document (due a re-touch.)
 
 [bigset]: https://github.com/basho-bin/bigsets/blob/master/doc/bigsets-design.md "The original design doc"
-[comparator]: https://github.com/basho/eleveldb/blob/pp-bigset-streaming-fold-per-elem-ctx/c_src/BigsetComparator.cc "The current custom comparator"
