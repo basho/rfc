@@ -27,7 +27,7 @@ Topics considered:
 
 # The Great Merge of 2016
 
-#### Product Differences
+### Product Differences
 
 In no particular order, here are features in Riak TS 1.4:
 
@@ -44,7 +44,7 @@ And these are features in Riak KV 2.2:
 1. Riak Search (YZ) and decoupling of Solr
 1. Addition of HyperLogLog
 
-#### Logistics of merging the TS and KV
+### Logistics of merging the TS and KV
 
 The most painless way forward seems to be merging Riak KV changes onto Riak TS
 simply because there are more breaking changes on the TS branches.  Merging back from
@@ -59,7 +59,7 @@ and tested.
 Once that hurdle has been passed, then we can look at factoring out some of the TS
 functionality into separate modules where it makes sense.
 
-#### List of Forked Repos
+### List of Forked Repos
 
 Here are the repos which differ between KV and TS.  Starred (☆) repos need no changes.
 Outlined are some major differences.  This is **not** an exhaustive list.
@@ -120,12 +120,12 @@ Outlined are some major differences.  This is **not** an exhaustive list.
   - Major reworking on KV side
   - Addition of new tests on the KV side
 
-#### Upgrade/Downgrade Issues
+### Upgrade/Downgrade Issues
 There are tests from KV to KV clusters and from TS to TS clusters but no specific KV to TS
 and TS to KV tests.  These will either need to be written or configured.  Some tests may need
 to be adjust to accommodate a merged Riak version.
 
-#### Regression Testing
+### Regression Testing
 A nice-to-have feature would be to increase the number of platforms covered in GiddyUp automated
 testing. However both Riak KV and Riak TS are only currently tested on CentOS 6.  The TS
 riak_tests are a superset of the KV tests, so simply need to be adjusted to allow different
@@ -134,7 +134,7 @@ back ends.
 Flappy tests will continue to be a problem, but hopefully multiple runs and comparisons to
 historical results will prove to be sufficient for this purpose.
 
-#### Smoke Testing
+### Smoke Testing
 This step has meant installing final packages and running some basic regressions on them.
 Assuming we have similar tests for KV, simply running existing test suites should be sufficient
 for confidence in a merged version of Riak.  Currently TS uses Terraform to test out final
@@ -142,7 +142,7 @@ packages, but KV could be used just as easily.  There might need to be new tests
 that, however.  Longer term we hope to automate this, but that is beyond the scope of this
 integration.
 
-#### Performance Testing
+### Performance Testing
 
 The performance team has extensive tests for Time Series.  It sounds like these tests were
 based on existing KV infrastructure so hopefully could reasonably easily adapt to a KV-only
@@ -150,7 +150,7 @@ configuration.
 
 In theory there should be negligible difference after the merge.
 
-#### Cohabitation
+### Cohabitation
 
 There are some constraints placed on Riak TS which are not in Riak KV,
 the largest of which is probably the requirement of only a levelDB backend.
