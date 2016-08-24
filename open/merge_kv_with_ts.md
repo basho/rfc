@@ -29,15 +29,14 @@ Topics considered:
 
 ### Product Differences
 
-In no particular order, here are features in Riak TS 1.4:
+In no particular order, here are features in Riak TS 1.4 (not in KV):
 
 1. Time Series functionality
 1. Additions to Write Once path for TS
 1. Only supported backend is LevelDB 
-1. Specialized LevelDB
 1. Addition of Term-to-Binary encoding (TTB)
 
-And these are features in Riak KV 2.2:
+And these are features in Riak KV 2.2 (not in TS):
 
 1. Read repair
 1. AAE
