@@ -1,10 +1,9 @@
-# RFC: Elyan, A simplified integration robot
+# RFC: Thumbs, A simple integration robot
 
 ### Abstract
 
-Once upon a time, in a culture far far away, Bors was chosen to perform the duties of integration robot for the kingdom of Basho.
-Elyan, the son of Bors aims to put forth a clean slate approach by simplifying the previously conducted process.
-By clearly defining the subset of functionality that are requirements for Basho, a tool may be built tailored specifically for the needs of the Basho.
+Once upon a time, Bors was chosen to perform the duties of integration robot.
+Since then, original goals have drifted and maintenance has lapsed. 
 
 ### Background
 
@@ -15,8 +14,9 @@ This document aims to clarify the base requirement of this tool and propose a de
 
 ### Current Issues
 
-- 
-- 
+- API requests limit reached
+- Unmaintained code, ironically, rusting.
+- The nature of actions sometimes unclear
 
 ### Proposal
 
@@ -33,7 +33,6 @@ We propose to build an integration robot to perform the operations on pull reque
 - IF it fails, mark build as failed, update Github PR comment with status of failure.
 - **TEST** the branch with unit tests.
 - IF it fails, mark the build as failed, update Github PR comment with status of failure.
-
 - **PASS**: Merge, Build and Tests all pass, system merges working integration branch to target branch. 
 - System updates Github PR comment with status of success and closes PR
 
@@ -52,10 +51,8 @@ We propose to build an integration robot to perform the operations on pull reque
 
 #### Stories
 - As a user, I should be able to set the default required reviewer count in a config file
-- As a user, I should be able to 
-- 
 
 ### References
 
 - Bors [https://github.com/graydon/bors](https://github.com/graydon/bors)
-- Elyan [https://github.com/davidx/elyan](https://github.com/davidx/elyan/)
+- Thumbs [https://github.com/davidx/thumbs](https://github.com/davidx/thumbs)
