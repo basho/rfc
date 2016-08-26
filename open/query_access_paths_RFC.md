@@ -93,7 +93,7 @@ All diagrams are drawn with a Mac OS X application called Monodraw (which I alwa
 
 ## Sections
 
-Because of limitations on diff sizes in GitHub this RFC is split into a number of documents:
+Because of limitations on diff sizes in GitHub this RFC is split into a number of sections:
 * [Background](./query_access_paths_RFC_background.md)
 * [TS queries](./query_access_paths_RFC_TS_queries.md)
 * [Future TS queries](./query_access_paths_RFC_future_TS_queries.md)
