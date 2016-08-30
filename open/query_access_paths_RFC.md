@@ -71,13 +71,13 @@ Capturing statistics about data cardinality etc, to drive heuristic determinatio
 
 ## Relationship To Other Documents
 
-This RFC focusses on the **physical** aspects of queries:
-* which nodes they touch
-* which ranges of data on disk they touch
+The following RFCs are companions to this one:
+* Riak TS Pipeline Library RFC
+* Riak Pipe For TS Query Distribution RFC
 
-The **logical** definition of TS SQL queries is defined here:
-* [Query Pipeline Documentation](https://github.com/basho/riak_ql/blob/develop/docs/the_query_pipeline.md)
-
+The relationship between these documents is explained in:
+* The 3 TS 1.5 RFCs - Their Relationship
+ 
 ## Quality Statement
 
 This document should be comprehensive yet simple enough that:
