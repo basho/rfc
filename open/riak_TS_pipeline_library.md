@@ -40,6 +40,9 @@ The following RFCs are companions to this one:
 * Riak Pipe for TS Query Distribution RFC
 * Query Access Paths RFC
 
+The relationship between these documents is explained in:
+* The 3 TS 1.5 RFCs - Their Relationship
+
 Quality Statement
 -----------------
 
