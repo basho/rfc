@@ -35,8 +35,8 @@ Due Diligence
 -------------
 
 The bold Scott Fritchie's name is all over the commit history so I done the dutiful:
-![bingo](./riak-pipe_for_TS_diagrams/Scott_convo1.png)
-![jingo](./riak-pipe_for_TS_diagrams/Scott_convo2.png)
+![DM convo](./riak_pipe_for_TS_diagrams/Scott_convo1.png)
+![DM convo](./riak_pipe_for_TS_diagrams/Scott_convo2.png)
 
 Proposal
 --------
