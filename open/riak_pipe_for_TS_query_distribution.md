@@ -25,6 +25,15 @@ Out of scope is:
 
 This should be a no-production chuck-away PoC - time bounded at a couple of weeks elapsed.
 
+Related Documents
+-----------------
+The following RFCs are companions to this one:
+* Riak TS Pipeline Library RFC
+* Query Access Paths RFC
+
+The relationship between these documents is explained in:
+* The 3 TS 1.5 RFCs - Their Relationship
+
 Prior Art
 ---------
 
