@@ -1,6 +1,9 @@
 # RFC: Use `gpb` protobuf library
 
-2016/07/14 First Draft
+Date       | Log
+-----------|----------------
+2016/07/14 | First Draft
+2016/09/12 | Update #1 - `gpb` changes
 
 ### Abstract
 
@@ -34,7 +37,11 @@ A while back, I created the following branches to try out `gpb` in Riak
 * [`basho/riak_pb`](https://github.com/basho/riak_pb/tree/features/lrb/use-gpb) - based on `2.1.4.0` tag
 * [`basho/riak-erlang-client`](https://github.com/basho/riak-erlang-client/tree/features/lrb/use-gpb) - based on `2.1.2` tag
 
-Running each project's test suite and dialyzer is successful. Brett ran some of the `riak_test` suite with success.
+We have also forked `gpb` here:
+
+* [`basho/gpb`](https://github.com/basho/gpb)
+
+Running each project's test suite and dialyzer is successful. I have run most of the `riak_test` suite with success.
 
 ### Risks
 
@@ -42,10 +49,13 @@ Running each project's test suite and dialyzer is successful. Brett ran some of 
 * In Erlang code, `erlang_protobuffs` uses `1` and `0` for true and false, whereas `gpb` uses the atoms `true` and `false`. Of course, booleans are still serialized to `1` and `0`, as the spec requires.
 * The functions to encode / decode messages are named slightly differently so usages must be carefully found and changed (unless macro magic can help?).
 
+2016/09/12 Update to the above:
+
+Working with Tomas, he has implemented an `epb_compatibility` option that provides 100% drop-in capability for `gpb` to replace `erlang_protobuffs` in a project. After using the latest set of changes, no code changes are necessary in Riak - only changes to how the `.proto` files are converted into Erlang (which is already done in the `riak_pb` and `riak_kv` `Makefile` files).
+
 ### TODO
 
 * Rebase branches to the correct starting point
 * Re-name branches to whatever the standard is these days
-* Deal with the "Unicode Strings as Lists" serialization issue
+* Deal with the "Unicode Strings as Lists" serialization issue (DONE - `ebp_compatibility` option)
 * Ensure every client library works correctly with `gpb`-enabled Riak
-* Profit
