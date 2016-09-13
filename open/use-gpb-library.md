@@ -53,6 +53,20 @@ Running each project's test suite and dialyzer is successful. I have run most of
 
 Working with Tomas, he has implemented an `epb_compatibility` option that provides 100% drop-in capability for `gpb` to replace `erlang_protobuffs` in a project. After using the latest set of changes, no code changes are necessary in Riak - only changes to how the `.proto` files are converted into Erlang (which is already done in the `riak_pb` and `riak_kv` `Makefile` files).
 
+### Client library testing
+
+Client Library       | 2016/09 Status
+-------------------------------------
+`riak-nodejs-client` | ✓
+`riak-java-client`   | ✓
+`riak-go-client`     | ✓
+`riak-python-client` | ✓
+`riak-ruby-client`   | X
+`riak-dotnet-client` | ✓
+`riak-php-client`    |
+`riak-phppb-client`  |
+`riak-erlang-client` | ✓
+
 ### TODO
 
 * Rebase branches to the correct starting point
