@@ -56,7 +56,7 @@ Working with Tomas, he has implemented an `epb_compatibility` option that provid
 ### Client library testing
 
 Client Library       | 2016/09 Status
--------------------------------------
+---------------------|---------------
 `riak-nodejs-client` | ✓
 `riak-java-client`   | ✓
 `riak-go-client`     | ✓
