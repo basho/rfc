@@ -67,6 +67,10 @@ Client Library       | 2016/09 Status
 `riak-phppb-client`  | ?
 `riak-erlang-client` | ✓
 
+### Licensing
+
+`gpb` is licensed under the LGPL. This originally caused [some discussion](https://github.com/tomas-abrahamsson/gpb/issues/60) over whether this license is compatible with Riak. However, there is no distribution of or linking to *any* `gpb` code, either at `.proto`-compile time or run-time, so there is no issue with `gpb`'s license.
+
 ### TODO
 
 * Rebase branches to the correct starting point
