@@ -3,7 +3,7 @@
 ### Revision History
 
 Date         | Description
---------------------------------------------
+-------------|------------------------------
 `2016-09-07` | Stream-of-consciousness Draft
 
 ### Abstract
