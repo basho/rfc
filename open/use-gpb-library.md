@@ -61,10 +61,10 @@ Client Library       | 2016/09 Status
 `riak-java-client`   | ✓
 `riak-go-client`     | ✓
 `riak-python-client` | ✓
-`riak-ruby-client`   | X
+`riak-ruby-client`   | ✓
 `riak-dotnet-client` | ✓
-`riak-php-client`    |
-`riak-phppb-client`  |
+`riak-php-client`    | ✓
+`riak-phppb-client`  | ?
 `riak-erlang-client` | ✓
 
 ### TODO
