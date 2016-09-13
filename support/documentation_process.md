@@ -94,8 +94,8 @@ Everybody can now get to work. The Tech RFC/Spec is described in [Simplified Doc
     ║                     ║                   ║                     ║
     ║    Product Spec     ║                   ║      Tech RFC       ║
     ║                     ║                   ║                     ║
-    ║  ┌───────────────┐  ║       Create      ║  ┌───────────────┐  ║              ╔═════════════════════╗
-    ║  │   Customer    │  ║                   ║  │SQL            │  ║              ║  Upgrade/Downgrade  ║
+    ║  ┌───────────────┐  ║                   ║  ┌───────────────┐  ║              ╔═════════════════════╗
+    ║  │   Customer    │  ║          Create   ║  │SQL            │  ║              ║  Upgrade/Downgrade  ║
     ║  │ Requirements  │  ║         ┌────────▶║  │Validation     │  ║◀─────────────║   Review Proforma   ║
     ║  └───────────────┘  ║         │         ║  │Steps          │  ║      Review  ╚═════════════════════╝
     ║                     ║         │         ║  │Query Rewriter │  ║ (if appropriate)
@@ -112,6 +112,26 @@ Everybody can now get to work. The Tech RFC/Spec is described in [Simplified Doc
                                     │         ╔═════════════════════╗
                                     └────────▶║    Training Docs    ║
                                               ╚═════════════════════╝
+
+---
+
+# Features Expressible In SQL IV
+
+The Technical RFC is cut over into the docs dir of the repo:
+
+    ╔═════════════════════╗
+    ║                     ║
+    ║      Tech RFC       ║
+    ║                     ║
+    ║  ┌───────────────┐  ║
+    ║  │SQL            │  ║     Copy-Pasta
+    ║  │Validation     │  ║──────────────────▶ http://github.com/basho/repo/docs/feature_doc.md
+    ║  │Steps          │  ║
+    ║  │Query Rewriter │  ║
+    ║  │Query Runtime  │  ║
+    ║  │Explain output │  ║
+    ║  └───────────────┘  ║
+    ╚═════════════════════╝
 
 ---
 
@@ -150,7 +170,7 @@ Then the technical RFC can be done - with review if appropriate:
     ║    Product Spec     ║                  ║       Tech RFC      ║
     ║                     ║                  ║                     ║
     ║  ┌───────────────┐  ║                  ║  ┌───────────────┐  ║               ╔═════════════════════╗
-    ║  │   Customer    │  ║      Create      ║  │               │  ║               ║  Upgrade/Downgrade  ║
+    ║  │   Customer    │  ║        Create    ║  │               │  ║               ║  Upgrade/Downgrade  ║
     ║  │ Requirements  │  ║        ┌────────▶║  │               │  ║◀──────────────║   Review Proforma   ║
     ║  └───────────────┘  ║        │         ║  │Appropriate    │  ║       Review  ╚═════════════════════╝
     ║                     ║        │         ║  │content        │  ║  (if appropriate)
@@ -219,6 +239,26 @@ Finally the docs/tests/training docs can be done (and implementation of the UI/U
     ║  │               │  ║       │           ╔═════════════════════╗
     ║  └───────────────┘  ║       └──────────▶║    Training Docs    ║
     ║                     ║                   ╚═════════════════════╝
+    ╚═════════════════════╝
+
+---
+
+# Features *NOT* Expressible In SQL V
+
+The Technical RFC is cut over into the docs dir of the repo:
+
+    ╔═════════════════════╗
+    ║                     ║
+    ║       Tech RFC      ║
+    ║                     ║
+    ║  ┌───────────────┐  ║
+    ║  │               │  ║    Copy-Pasta
+    ║  │               │  ║─────────────────▶ http://github.com/basho/repo/docs/feature_doc.md
+    ║  │Appropriate    │  ║
+    ║  │content        │  ║
+    ║  │               │  ║
+    ║  │               │  ║
+    ║  └───────────────┘  ║
     ╚═════════════════════╝
 
 ---
