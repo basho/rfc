@@ -39,4 +39,5 @@ After doing the above, starting Riak via `riak start` should start Riak and it s
 
 ### Misc
 
-Other servers like OpenSSH or Postgres should be reviewed to see how they deal with the issue of running as a limited user.
+* Other servers like OpenSSH or Postgres should be reviewed to see how they deal with the issue of running as a limited user.
+* Other servers' installation sequence should be reviewed to see if they allow choosing a pre-existing user as the installed user. Has a customer ever requested installation as `nobody` vs `riak`, for instance?
