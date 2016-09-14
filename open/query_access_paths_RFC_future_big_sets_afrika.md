@@ -29,76 +29,62 @@ The partition key `setid` points to the set on the ring and the local key `{seti
 We can generically consider that BigSets/BigMaps have at-vnode access patterns similar to TS:
 
 ```
-                                                                    Vnode 1
-                                                                          │
-     Request    ════════════════╗                          BigSet/BigMap  │
-                                ║                                    │    │
-  ┌───────────────────────────┐ ║                        Bucket 1    │    │
-  │   The request goes to a   │ ║                               │    │    │
-  │  particular quantum in a  │ ║                Keyspace 1     │    │    │
-  │ particular keyspace in a  │ ║                         │     │    │    │
-  │ particular bucket in the  │ ║                CRDT     │     │    │    │
-  │ BigSet/BigMap bit of the  │ ╚═══════════════║   │     │     │    │    │
-  │  chosen vnode - and then  │                 ║   │     │     │    │    │
-  │ performs range operations │                 ║   │     │     │    │    │
-  │     within that vnode     │                 ║   │     │     │    │    │
-  └───────────────────────────┘                 ▼   ▼     │     │    │    │
-                                                          │     │    │    │
-                                                 CRDT     │     │    │    │
-                                                    │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    ▼     │     │    │    │
-                                                          │     │    │    │
-                                                 CRDT     │     │    │    │
-                                                    │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    ▼     ▼     │    │    │
-                                                                │    │    │
-                                                 Keyspace 2     │    │    │
-                                                          │     │    │    │
-                                                                │    │    │
-                                                          │     │    │    │
-                                                                │    │    │
-                                                          ▼     │    │    │
-                                                 Keyspace 3     │    │    │
-                                                          │     │    │    │
-                                                                │    │    │
-                                                          │     │    │    │
-                                                                │    │    │
-                                                          ▼     ▼    │    │
-                                                                     │    │
-                                                         Bucket 2    │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                ▼    │    │
-                                                                     │    │
-                                                         Bucket 3    │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                ▼    ▼    │
-                                                                          │
-                                                             KV and TS    │
-                                                                     │    │
-                                                                          │
-                                                                     │    │
-                                                                          │
-                                                                     │    │
-                                                                     ▼    │
-                                                                          │
-                                                            2i Indices    │
-                                                                     │    │
-                                                                          │
-                                                                     │    │
-                                                                          │
-                                                                     ▼    ▼s
+
+                                                               Vnode 1
+                                                                     │
+     Request    ════════════════╗                     BigSet/BigMap  │
+                                ║                               │    │
+  ┌───────────────────────────┐ ║                   Bucket 1    │    │
+  │   The request goes to a   │ ╚═══════════════▶          │    │    │
+  │  particular quantum in a  │                    CRDT    │    │    │
+  │ particular bucket in the  │                   ║   │    │    │    │
+  │ BigSet/BigMap bit of the  │                   ║   │    │    │    │
+  │  chosen vnode - and then  │                   ║   │    │    │    │
+  │ performs range operations │                   ║   │    │    │    │
+  │     within that vnode     │                   ▼   ▼    │    │    │
+  │                           │                            │    │    │
+  └───────────────────────────┘                    CRDT    │    │    │
+                                                      │    │    │    │
+                                                      │    │    │    │
+                                                      │    │    │    │
+                                                      │    │    │    │
+                                                      ▼    │    │    │
+                                                           │    │    │
+                                                   CRDT    │    │    │
+                                                      │    │    │    │
+                                                      │    │    │    │
+                                                      │    │    │    │
+                                                      │    │    │    │
+                                                      ▼    ▼    │    │
+                                                                │    │
+                                                    Bucket 2    │    │
+                                                           │    │    │
+                                                                │    │
+                                                           │    │    │
+                                                                │    │
+                                                           ▼    │    │
+                                                                │    │
+                                                    Bucket 3    │    │
+                                                           │    │    │
+                                                                │    │
+                                                           │    │    │
+                                                                │    │
+                                                           ▼    ▼    │
+                                                                     │
+                                                        KV and TS    │
+                                                                │    │
+                                                                     │
+                                                                │    │
+                                                                     │
+                                                                │    │
+                                                                ▼    │
+                                                                     │
+                                                       2i Indices    │
+                                                                │    │
+                                                                     │
+                                                                │    │
+                                                                     │
+                                                                ▼    ▼
 ```
 
 The distribution of queries around the ring is slightly different as well. The write is sent to a vnode, which computes the Delta and sends that Delta on to the replicas:

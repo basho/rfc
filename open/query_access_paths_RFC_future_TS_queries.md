@@ -95,86 +95,77 @@ These queries can be safely executed with indefinite size. If the query has no o
 Coverage plan queries would bundle up the visits to a particular vnode with a coverage plan and be executed sequentially like streaming queries - they would reduce the number of discrete queries - but violate the normal key order of results return:
 
 ```
-                                                                    Vnode 1
-                                                                          │
-     Request    ═══════════════╦╗                            KV and TS    │
-                               ║║                                    │    │
-  ┌────────────────────────┐   ║║                        Bucket 1    │    │
-  │A list of quantums to be│   ║║                               │    │    │
-  │scanned for a particular│   ║║                Keyspace 1     │    │    │
-  │ bucket is passed to a  │   ║║                         │     │    │    │
-  │vnode - they may be from│   ║║           Quantum 1     │     │    │    │
-  │     many keyspaces     │   ║╚═══════════════║   │     │     │    │    │
-  └────────────────────────┘   ║                ║   │     │     │    │    │
-                               ║                ║   │     │     │    │    │
-                               ║                ║   │     │     │    │    │
-                               ║                ▼   ▼     │     │    │    │
-                               ║                          │     │    │    │
-                               ║            Quantum 2     │     │    │    │
-                               ║                    │     │     │    │    │
-                               ║                    │     │     │    │    │
-                               ║                    │     │     │    │    │
-                               ║                    │     │     │    │    │
-                               ║                    ▼     │     │    │    │
-                               ║                          │     │    │    │
-                               ║            Quantum 3     │     │    │    │
-                               ║                    │     │     │    │    │
-                               ║                    │     │     │    │    │
-                               ║                    │     │     │    │    │
-                               ║                    │     │     │    │    │
-                               ║                    ▼     ▼     │    │    │
-                               ║                                │    │    │
-                               ║                 Keyspace 2     │    │    │
-                               ║                                │    │    │
-                               ║            Quantum 4     │     │    │    │
-                               ║                    │     │     │    │    │
-                               ║                    │     │     │    │    │
-                               ║                    │     │     │    │    │
-                               ║                    │     │     │    │    │
-                               ║                    ▼     │     │    │    │
-                               ║                          │     │    │    │
-                               ║            Quantum 5     │     │    │    │
-                               ╠═══════════════║    │     │     │    │    │
-                               ║               ║    │     │     │    │    │
-                               ║               ║    │     │     │    │    │
-                               ║               ║    │     │     │    │    │
-                               ║               ▼    ▼     │     │    │    │
-                               ║                          │     │    │    │
-                               ║            Quantum 6     │     │    │    │
-                               ╚═══════════════║    │     │     │    │    │
-                                               ║    │     │     │    │    │
-                                               ║    │     │     │    │    │
-                                               ║    │     │     │    │    │
-                                               ▼    ▼     ▼     │    │    │
-                                                                │    │    │
-                                                 Keyspace 3     │    │    │
-                                                          │     │    │    │
-                                                                │    │    │
-                                                          │     │    │    │
-                                                                │    │    │
-                                                          ▼     ▼    │    │
-                                                                     │    │
-                                                         Bucket 2    │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                ▼    │    │
-                                                                     │    │
-                                                         Bucket 3    │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                ▼    ▼    │
-                                                                          │
-                                                            2i Indices    │
-                                                                          │
-                                                                     │    │
-                                                                          │
-                                                                     │    │
-                                                                          │
-                                                                     ▼    ▼
+                                                            Vnode 1
+                                                                  │
+     Request    ═══════════════╗                     KV and TS    │
+                               ║                             │    │
+  ┌────────────────────────┐   ║                 Bucket 1    │    │
+  │A list of quantums to be│   ║                        │    │    │
+  │scanned for a particular│   ║            Quantum 1   │    │    │
+  │ bucket is passed to a  │   ╠═══════════════▶║   │   │    │    │
+  │         vnode          │   ║                ║   │   │    │    │
+  │                        │   ║                ║   │   │    │    │
+  └────────────────────────┘   ║                ║   │   │    │    │
+                               ║                ▼   ▼   │    │    │
+                               ║                        │    │    │
+                               ║            Quantum 2   │    │    │
+                               ║                    │   │    │    │
+                               ║                    │   │    │    │
+                               ║                    │   │    │    │
+                               ║                    │   │    │    │
+                               ║                    ▼   │    │    │
+                               ║                        │    │    │
+                               ║            Quantum 3   │    │    │
+                               ║                    │   │    │    │
+                               ║                    │   │    │    │
+                               ║                    │   │    │    │
+                               ║                    │   │    │    │
+                               ║                    ▼   │    │    │
+                               ║                        │    │    │
+                               ║                        │    │    │
+                               ║                        │    │    │
+                               ║            Quantum 4   │    │    │
+                               ║                    │   │    │    │
+                               ║                    │   │    │    │
+                               ║                    │   │    │    │
+                               ║                    │   │    │    │
+                               ║                    ▼   │    │    │
+                               ║                        │    │    │
+                               ║            Quantum 5   │    │    │
+                               ╠══════════════▶║    │   │    │    │
+                               ║               ║    │   │    │    │
+                               ║               ║    │   │    │    │
+                               ║               ║    │   │    │    │
+                               ║               ▼    ▼   │    │    │
+                               ║                        │    │    │
+                               ║            Quantum 6   │    │    │
+                               ╚══════════════▶║    │   │    │    │
+                                               ║    │   │    │    │
+                                               ║    │   │    │    │
+                                               ║    │   │    │    │
+                                               ▼    ▼   ▼    │    │
+                                                             │    │
+                                                 Bucket 2    │    │
+                                                        │    │    │
+                                                             │    │
+                                                        │    │    │
+                                                             │    │
+                                                        ▼    │    │
+                                                             │    │
+                                                 Bucket 3    │    │
+                                                        │    │    │
+                                                             │    │
+                                                        │    │    │
+                                                             │    │
+                                                        ▼    ▼    │
+                                                                  │
+                                                    2i Indices    │
+                                                                  │
+                                                             │    │
+                                                                  │
+                                                             │    │
+                                                                  │
+                                                             ▼    ▼
 ```
 
 The query plan that is created depends on how many quanta the query spans - but it tends asymptotically to a full coverage plan as the number of quanta spanned increases:
@@ -308,82 +299,73 @@ Then a finalise query is run on the locally persisted data and the results of th
 For queries which cannot be mapped to quanta - that is to say SQL queries where the WHERE clause does not fully cover the primary key - it is not possible to execute them except by a coverage plan with a full bucket scan.
 
 ```
-                                                                    Vnode 1
-                                                                          │
-     Request    ════════════╗                              Time Series    │
-                            ║                                        │    │
-  ┌────────────────────┐    ║                            Bucket 1    │    │
-  │  A full bucket is  │    ║                                   │    │    │
-  │   scanned across   │    ║                    Keyspace 1     │    │    │
-  │ multiple keyspaces │    ║                             │     │    │    │
-  └────────────────────┘    ║               Quantum 1     │     │    │    │
-                            ╚═══════════║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║                 │     │    │    │
-                                        ║   Quantum 2     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           ▼     │     │    │    │
-                                        ║                 │     │    │    │
-                                        ║   Quantum 3     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           ▼     ▼     │    │    │
-                                        ║                       │    │    │
-                                        ║        Keyspace 2     │    │    │
-                                        ║                 │     │    │    │
-                                        ║   Quantum 4     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║                 │     │    │    │
-                                        ║   Quantum 5     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           ▼     │     │    │    │
-                                        ║                 │     │    │    │
-                                        ║   Quantum 6     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           │     │     │    │    │
-                                        ║           ▼     ▼     │    │    │
-                                        ║                       │    │    │
-                                        ║        Keyspace 3     │    │    │
-                                        ║                 │     │    │    │
-                                        ║                       │    │    │
-                                        ║                 │     │    │    │
-                                        ║                       │    │    │
-                                        ▼                 ▼     ▼    │    │
-                                                                     │    │
-                                                         Bucket 2    │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                ▼    │    │
-                                                                     │    │
-                                                         Bucket 3    │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                ▼    ▼    │
-                                                                          │
-                                                            2i Indices    │
-                                                                          │
-                                                                     │    │
-                                                                          │
-                                                                     │    │
-                                                                          │
-                                                                     ▼    ▼
+                                                             Vnode 1
+                                                                   │
+     Request    ════════════╗                       Time Series    │
+                            ║                                 │    │
+  ┌────────────────────┐    ║                     Bucket 1    │    │
+  │  A full bucket is  │    ║                            │    │    │
+  │      scanned       │    ║               Quantum 1    │    │    │
+  │                    │    ╚═══════════║           │    │    │    │
+  └────────────────────┘                ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║                │    │    │
+                                        ║   Quantum 2    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║           ▼    │    │    │
+                                        ║                │    │    │
+                                        ║   Quantum 3    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║           ▼    │    │    │
+                                        ║                │    │    │
+                                        ║                │    │    │
+                                        ║                │    │    │
+                                        ║   Quantum 4    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║                │    │    │
+                                        ║   Quantum 5    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║           ▼    │    │    │
+                                        ║                │    │    │
+                                        ║   Quantum 6    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ║           │    │    │    │
+                                        ▼           ▼    ▼    │    │
+                                                              │    │
+                                                  Bucket 2    │    │
+                                                         │    │    │
+                                                              │    │
+                                                         │    │    │
+                                                              │    │
+                                                         ▼    │    │
+                                                              │    │
+                                                  Bucket 3    │    │
+                                                         │    │    │
+                                                              │    │
+                                                         │    │    │
+                                                              │    │
+                                                         ▼    ▼    │
+                                                                   │
+                                                     2i Indices    │
+                                                                   │
+                                                              │    │
+                                                                   │
+                                                              │    │
+                                                                   │
+                                                              ▼    ▼
 ```
 
 These queries requires a full bucket scan on all vnodes - so are distributed by a full coverage plan:

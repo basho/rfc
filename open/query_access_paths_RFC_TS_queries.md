@@ -11,69 +11,54 @@ There is only one query path implemented in time series - the multi-quanta sub-q
 TS's principle innovation is that related data is co-located - so that data with times that fall into the same quanta is written to the same vnode. The vnode access path therefore contains another layer of nesting:
 
 ```
-                                                                    Vnode 1
-                                                                          │
-     Request    ════════════════╗                            KV and TS    │
-                                ║                                    │    │
-  ┌────────────────────────┐    ║                        Bucket 1    │    │
-  │ The request goes to a  │    ║                               │    │    │
-  │particular quantum in a │    ║                Keyspace 1     │    │    │
-  │particular keyspace in a│    ║                         │     │    │    │
-  │particular bucket in the│    ║           Quantum 1     │     │    │    │
-  │  TS bit of the chosen  │    ╚═══════════════║   │     │     │    │    │
-  └────────────────────────┘                    ║   │     │     │    │    │
-                                                ║   │     │     │    │    │
-                                                ║   │     │     │    │    │
-                                                ▼   ▼     │     │    │    │
-                                                          │     │    │    │
-                                            Quantum 2     │     │    │    │
-                                                    │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    ▼     │     │    │    │
-                                                          │     │    │    │
-                                            Quantum 3     │     │    │    │
-                                                    │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    │     │     │    │    │
-                                                    ▼     ▼     │    │    │
-                                                                │    │    │
-                                                 Keyspace 2     │    │    │
-                                                          │     │    │    │
-                                                                │    │    │
-                                                          │     │    │    │
-                                                                │    │    │
-                                                          ▼     │    │    │
-                                                 Keyspace 3     │    │    │
-                                                          │     │    │    │
-                                                                │    │    │
-                                                          │     │    │    │
-                                                                │    │    │
-                                                          ▼     ▼    │    │
-                                                                     │    │
-                                                         Bucket 2    │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                ▼    │    │
-                                                                     │    │
-                                                         Bucket 3    │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                │    │    │
-                                                                     │    │
-                                                                ▼    ▼    │
-                                                                          │
-                                                            2i Indices    │
-                                                                          │
-                                                                     │    │
-                                                                          │
-                                                                     │    │
-                                                                          │
-                                                                     ▼    ▼
+                                                             Vnode 1
+                                                                   │
+     Request    ════════════════╗                     KV and TS    │
+                                ║                             │    │
+  ┌────────────────────────┐    ║                 Bucket 1    │    │
+  │ The request goes to a  │    ║                        │    │    │
+  │particular quantum in a │    ║           Quantum 1    │    │    │
+  │particular bucket in the│    ╚═══════════════║   │    │    │    │
+  │  TS bit of the chosen  │                    ║   │    │    │    │
+  │    vnode - and then    │                    ║   │    │    │    │
+  └────────────────────────┘                    ║   │    │    │    │
+                                                ▼   ▼    │    │    │
+                                                         │    │    │
+                                            Quantum 2    │    │    │
+                                                    │    │    │    │
+                                                    │    │    │    │
+                                                    │    │    │    │
+                                                    │    │    │    │
+                                                    ▼    │    │    │
+                                                         │    │    │
+                                            Quantum 3    │    │    │
+                                                    │    │    │    │
+                                                    │    │    │    │
+                                                    │    │    │    │
+                                                    │    │    │    │
+                                                    ▼    ▼    │    │
+                                                              │    │
+                                                  Bucket 2    │    │
+                                                         │    │    │
+                                                              │    │
+                                                         │    │    │
+                                                              │    │
+                                                         ▼    │    │
+                                                              │    │
+                                                  Bucket 3    │    │
+                                                         │    │    │
+                                                              │    │
+                                                         │    │    │
+                                                              │    │
+                                                         ▼    ▼    │
+                                                                   │
+                                                     2i Indices    │
+                                                                   │
+                                                              │    │
+                                                                   │
+                                                              │    │
+                                                                   │
+                                                              ▼    ▼
 ```
  
  A TS Query is converted into a set of sub-queries - up to the max_quanta setting and these are simultaneously executed on n_val vnodes. The default settings are max_quanta = 5 and n_val = 3 so up to 15 ranges scans will be executing simultaneously. These may be distributed around the physical cluster unevenly. The diagram shows 2 sub-queries and n_val of 3.

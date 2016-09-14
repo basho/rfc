@@ -24,37 +24,22 @@ The leveldb access pattern is:
                                               Bucket 1    │    │
                                                      │    │    │
                                                      │    │    │
-                                       Keyspace 1    │    │    │
-                                                │    │    │    │
-     Request    ═══════════════╗                │    │    │    │
-                               ║                │    │    │    │
-  ┌────────────────────────┐   ║                │    │    │    │
-  │ The request goes to a  │   ║                ▼    │    │    │
-  │particular keyspace in a│   ║       Keyspace 2    │    │    │
-  │particular bucket in the│   ║                │    │    │    │
-  │  KV bit of the chosen  │   ║                │    │    │    │
-  │         vnode          │   ╚══════════════▶ │    │    │    │
-  └────────────────────────┘                    │    │    │    │
-                                                ▼    │    │    │
-                                       Keyspace 3    │    │    │
-                                                │    │    │    │
-                                                │    │    │    │
-                                                │    │    │    │
-                                                │    │    │    │
-                                                ▼    ▼    │    │
-                                                          │    │
-                                              Bucket 2    │    │
                                                      │    │    │
-                                                          │    │
                                                      │    │    │
-                                                          │    │
-                                                     ▼    │    │
-                                                          │    │
+     Request    ════════════════╗                    ▼    │    │
+                                ║                         │    │
+  ┌────────────────────────┐    ║             Bucket 2    │    │
+  │ The request goes to a  │    ║                    │    │    │
+  │particular keyspace in a│    ║                    │    │    │
+  │particular bucket in the│    ╚════════════════▶   │    │    │
+  │  KV bit of the chosen  │                         │    │    │
+  │         vnode          │                         ▼    │    │
+  └────────────────────────┘                              │    │
                                               Bucket 3    │    │
                                                      │    │    │
-                                                          │    │
                                                      │    │    │
-                                                          │    │
+                                                     │    │    │
+                                                     │    │    │
                                                      ▼    ▼    │
                                                                │
                                                  2i Indices    │
@@ -73,11 +58,10 @@ Lets understand this diagram in more detail. Each vnode contains three sorts of 
 
 Each of these areas is divided into buckets. 2i indices are only used with KV buckets, so the 2i buckets correspond to the KV buckets for which data has been written with a 2i index.
 
-Each of the buckets is then logically broken into keyspaces.
+If there is a KV bucket with an n_val of 4 (and lots of data has been written to that bucket) then data that hashes to 4 vnodes will be intermingled.
+Because the 2i index space only pertains to KV - there will data hashed to 4 vnodes in that as well (provided data is written with secondary indexes).
 
-If there is a KV bucket with an n_val of 4 (and lots of data has been written to that bucket) then there will be 4 keyspaces - because the 2i index space only pertains to KV - there will be up to 4 keyspaces in that as well (provided data is written with secondary indexes).
-
-If there has been a TS bucket created with an n_val of 5 - there will be up to 5 keyspaces in the vnode TS portion.
+If there has been a TS bucket created with an n_val of 5 - there will be data hashed to up to 5 vnodes intermingled in the vnode TS portion.
 
 In this diagram we have only expanded the first bucket of the KV and TS section - and we have collapsed the 2i portions - they will be expanded as appropriately later in the document.
 
@@ -129,75 +113,45 @@ The write to a 2i index is done as a transaction under levelDB - let us refer to
   │   the KV space for a   │                 Bucket 1     │    │
   │     bucket and the     │                        │     │    │
   │ corresponding 2i index │                        │     │    │
-  │    for that bucket     │         Keyspace 1     │     │    │
-  └────────────────────────┘                  │     │     │    │
-   PUT Request  ══════════════╗               │     │     │    │
-                              ╠═════════════▶ │     │     │    │
-                              ║               │     │     │    │
-                              ║               ▼     │     │    │
-                              ║      Keyspace 2     │     │    │
-                              ║               │     │     │    │
-                              ║               │     │     │    │
-                              ║               │     │     │    │
-                              ║               │     │     │    │
-                              ║               ▼     │     │    │
-                              ║      Keyspace 3     │     │    │
-                              ║               │     │     │    │
-                              ║               │     │     │    │
-                              ║               │     │     │    │
-                              ║               │     │     │    │
-                              ║               ▼     ▼     │    │
+  │    for that bucket     │                        │     │    │
+  └────────────────────────┘                        │     │    │
+   PUT Request  ══════════════╗                     ▼     │    │
                               ║                           │    │
                               ║              Bucket 2     │    │
                               ║                     │     │    │
-                              ║                           │    │
                               ║                     │     │    │
-                              ║                           │    │
+                              ║                     │     │    │
+                              ╠══════════════▶      │     │    │
                               ║                     ▼     │    │
                               ║                           │    │
                               ║              Bucket 3     │    │
                               ║                     │     │    │
-                              ║                           │    │
                               ║                     │     │    │
-                              ║                           │    │
-                              ║                     ▼     ▼    │
-                              ║                                │
+                              ║                     │     │    │
+                              ║                     │     │    │
+                              ║                     ▼     │    │
+                              ║                           ▼    │
                               ║                  2i Indices    │
-                              ║                           │    │
+                              ║                                │
                               ║               Bucket 1    │    │
                               ║                      │    │    │
                               ║                      │    │    │
-                              ║       Keyspace 1     │    │    │
-                              ║                │     │    │    │
-                              ║                │     │    │    │
-                              ║                │     │    │    │
-                              ║                │     │    │    │
-                              ║                ▼     │    │    │
-                              ║       Keyspace 2     │    │    │
-                              ║                │     │    │    │
-                              ║                │     │    │    │
-                              ║                │     │    │    │
-                              ╚══════════════▶ │     │    │    │
-                                               ▼     │    │    │
-                                      Keyspace 3     │    │    │
-                                               │     │    │    │
-                                               │     │    │    │
-                                               │     │    │    │
-                                               │     │    │    │
-                                               ▼     ▼    │    │
-                                                          │    │
-                                              Bucket 2    │    │
+                              ║                      │    │    │
+                              ║                      │    │    │
+                              ║                      ▼    │    │
+                              ║                           │    │
+                              ║               Bucket 2    │    │
+                              ║                      │    │    │
+                              ║                      │    │    │
+                              ╚══════════════▶       │    │    │
                                                      │    │    │
-                                                          │    │
-                                                     │    │    │
-                                                          │    │
                                                      ▼    │    │
                                                           │    │
                                               Bucket 3    │    │
                                                      │    │    │
-                                                          │    │
                                                      │    │    │
-                                                          │    │
+                                                     │    │    │
+                                                     │    │    │
                                                      ▼    ▼    ▼
 ```
 
@@ -247,40 +201,26 @@ Now let us look at an index GET:
                                                                │
                                                           ▼    │
                                                  2i Indices    │
-   Read Request ═════════════╗                            │    │
-                             ║                Bucket 1    │    │
-  ┌────────────────────────┐ ║                       │    │    │
-  │ The request goes to a  │ ║        Keyspace 1     │    │    │
-  │    particular index    │ ║                 │     │    │    │
-  │    pertaining to a     │ ║                 │     │    │    │
-  │ particular bucket in a │ ║                 │     │    │    │
-  │ particular keyspace on │ ║                 │     │    │    │
-  │    the chosen vnode    │ ║                 ▼     │    │    │
-  └────────────────────────┘ ║        Keyspace 2     │    │    │
-                             ║                 │     │    │    │
-                             ║                 │     │    │    │
-                             ╚════════════▶    │     │    │    │
-                                               │     │    │    │
-                                               ▼     │    │    │
-                                      Keyspace 3     │    │    │
-                                               │     │    │    │
-                                               │     │    │    │
-                                               │     │    │    │
-                                               │     │    │    │
-                                               ▼     ▼    │    │
-                                                          │    │
-                                              Bucket 2    │    │
-                                                     │    │    │
-                                                          │    │
-                                                     │    │    │
-                                                          │    │
+   Read Request ═══════════════╗                          │    │
+                               ║              Bucket 1    │    │
+  ┌────────────────────────┐   ║                     │    │    │
+  │ The request goes to a  │   ║                     │    │    │
+  │    particular index    │   ║                     │    │    │
+  │    pertaining to a     │   ║                     │    │    │
+  │ particular bucket in a │   ║                     ▼    │    │
+  │ particular keyspace on │   ║                          │    │
+  │    the chosen vnode    │   ║              Bucket 2    │    │
+  └────────────────────────┘   ║                     │    │    │
+                               ║                     │    │    │
+                               ║                     │    │    │
+                               ╚═══════════════▶     │    │    │
                                                      ▼    │    │
                                                           │    │
                                               Bucket 3    │    │
                                                      │    │    │
-                                                          │    │
                                                      │    │    │
-                                                          │    │
+                                                     │    │    │
+                                                     │    │    │
                                                      ▼    ▼    ▼
 ```
 
@@ -334,44 +274,30 @@ List keys comes in 2 versions - one which lists keys for KV and one for TS - onl
                                                           │    │
                                               Bucket 1    │    │
                                                      │    │    │
-                                       Keyspace 1    │    │    │
-                                                │    │    │    │
-                         ╔════════║             │    │    │    │
-     Request    ═════════╝        ║             │    │    │    │
-                                  ║             │    │    │    │
-  ┌────────────────────────┐      ║             ▼    │    │    │
-  │ The request goes to a  │      ║    Keyspace 2    │    │    │
-  │particular bucket (in KV│      ║             │    │    │    │
-  │or TS as appropriate) on│      ║             │    │    │    │
-  │  the chosen vnode and  │      ║             │    │    │    │
-  │ then executes a range  │      ║             │    │    │    │
-  │ scan across keyspaces  │      ║             ▼    │    │    │
-  └────────────────────────┘      ║    Keyspace 3    │    │    │
-                                  ║             │    │    │    │
-                                  ║             │    │    │    │
-                                  ║             │    │    │    │
-                                  ║             │    │    │    │
-                                  ║             ▼    ▼    │    │
-                                  ▼                       │    │
-                                              Bucket 2    │    │
                                                      │    │    │
-                                                          │    │
                                                      │    │    │
-                                                          │    │
-                                                     ▼    │    │
-                                                          │    │
-                                              Bucket 3    │    │
                                                      │    │    │
-                                                          │    │
+     Request    ════════════╗                        ▼    │    │
+                            ║                             │    │
+  ┌────────────────────────┐║                 Bucket 2    │    │
+  │ The request goes to a  │╚═══════════▶║           │    │    │
+  │particular bucket (in KV│             ║           │    │    │
+  │or TS as appropriate) on│             ║           │    │    │
+  │  the chosen vnode and  │             ║           │    │    │
+  │ then executes a range  │             ▼           ▼    │    │
+  │ scan across keyspaces  │                              │    │
+  └────────────────────────┘                  Bucket 3    │    │
                                                      │    │    │
-                                                          │    │
+                                                     │    │    │
+                                                     │    │    │
+                                                     │    │    │
                                                      ▼    ▼    │
                                                                │
                                                  2i Indices    │
                                                           │    │
-                                                               │
                                                           │    │
-                                                               │
+                                                          │    │
+                                                          │    │
                                                           ▼    ▼
 ```
 
@@ -426,45 +352,31 @@ List buckets is even more intrusive than list keys:
                                                   KV and TS    │
                                                           │    │
                                               Bucket 1    │    │
-                                                     │    │    │
-                                       Keyspace 1    │    │    │
-                                                │    │    │    │
-                         ╔════════╦             │    │    │    │
-     Request    ═════════╝        ║             │    │    │    │
-                                  ║             │    │    │    │
-  ┌────────────────────────┐      ║             ▼    │    │    │
-  │The request goes to the │      ║    Keyspace 2    │    │    │
-  │ start of the KV and TS │      ║             │    │    │    │
-  │ space, scans down all  │      ║             │    │    │    │
-  │the entries for all the │      ║             │    │    │    │
-  │        buckets         │      ║             │    │    │    │
-  └────────────────────────┘      ║             ▼    │    │    │
-                                  ║    Keyspace 3    │    │    │
-                                  ║             │    │    │    │
-                                  ║             │    │    │    │
-                                  ║             │    │    │    │
-                                  ║             │    │    │    │
-                                  ║             ▼    ▼    │    │
-                                  ║                       │    │
-                                  ║           Bucket 2    │    │
-                                  ║                  │    │    │
-                                  ║                       │    │
-                                  ║                  │    │    │
-                                  ║                       │    │
-                                  ║                  ▼    │    │
-                                  ║                       │    │
-                                  ║           Bucket 3    │    │
-                                  ║                  │    │    │
-                                  ║                       │    │
-                                  ║                  │    │    │
-                                  ║                       │    │
-                                  ▼                  ▼    ▼    │
+                            ╔═══════════▶║           │    │    │
+                            ║            ║           │    │    │
+                            ║            ║           │    │    │
+                            ║            ║           │    │    │
+     Request    ════════════╝            ║           ▼    │    │
+                                         ║                │    │
+  ┌────────────────────────┐             ║    Bucket 2    │    │
+  │The request goes to the │             ║           │    │    │
+  │ start of the KV and TS │             ║           │    │    │
+  │ space, scans down all  │             ║           │    │    │
+  │the entries for all the │             ║           │    │    │
+  │        buckets         │             ║           ▼    │    │
+  └────────────────────────┘             ║                │    │
+                                         ║    Bucket 3    │    │
+                                         ║           │    │    │
+                                         ║           │    │    │
+                                         ║           │    │    │
+                                         ║           │    │    │
+                                         ▼           ▼    ▼    │
                                                                │
                                                  2i Indices    │
                                                           │    │
-                                                               │
                                                           │    │
-                                                               │
+                                                          │    │
+                                                          │    │
                                                           ▼    ▼
 ```
 
@@ -517,24 +429,24 @@ In this mode each vnode is supplied a set of keys and the map reduce job retriev
                                                           │    │
                                               Bucket 1    │    │
                                                           │    │
-                                       Keyspace 1    │    │    │
-                                                │    │    │    │
-                                                │    │    │    │
-     Request    ═══════════════╗                │    │    │    │
-                               ╠══════════════▶ │    │    │    │
-  ┌────────────────────────┐   ║                ▼    │    │    │
-  │  A set of keys spread  │   ║       Keyspace 2    │    │    │
-  │ across key spaces in a │   ║                │    │    │    │
-  │  particular bucket is  │   ║                │    │    │    │
-  │  passed to the vnode   │   ║                │    │    │    │
-  └────────────────────────┘   ╠══════════════▶ │    │    │    │
-                               ║                ▼    │    │    │
-                               ║       Keyspace 3    │    │    │
-                               ║                │    │    │    │
-                               ║                │    │    │    │
-                               ║                │    │    │    │
-                               ╚══════════════▶ │    │    │    │
-                                                ▼    ▼    │    │
+                                                     │    │    │
+                                 ╔═════════════════▶ │    │    │
+                                 ║                   │    │    │
+     Request    ═════════════════╣                   │    │    │
+                                 ║                   │    │    │
+  ┌────────────────────────┐     ║                   │    │    │
+  │   A set of keys in a   │     ║                   │    │    │
+  │  particular bucket is  │     ║                   │    │    │
+  │  passed to the vnode   │     ║                   │    │    │
+  │                        │     ║                   │    │    │
+  └────────────────────────┘     ╠════════════════▶  │    │    │
+                                 ║                   │    │    │
+                                 ║                   │    │    │
+                                 ║                   │    │    │
+                                 ║                   │    │    │
+                                 ║                   │    │    │
+                                 ╚════════════════▶  │    │    │
+                                                     ▼    │    │
                                                           │    │
                                               Bucket 2    │    │
                                                           │    │
@@ -556,8 +468,8 @@ In this mode each vnode is supplied a set of keys and the map reduce job retriev
                                                           │    │
                                                                │
                                                           ▼    ▼
-``` 
 
+``` 
 
 At the ring the access path is 'bundled up' from the keys in a sorta coverage plan:
 
@@ -603,25 +515,25 @@ Per bucket map reduce scans all the keys in a particular bucket and operates on 
                                                   KV and TS    │
                                                           │    │
                                               Bucket 1    │    │
-                                                     │    │    │
-                                       Keyspace 1    │    │    │
-                         ╔═════════║            │    │    │    │
-                         ║         ║            │    │    │    │
-     Request    ═════════╝         ║            │    │    │    │
-                                   ║            │    │    │    │
-  ┌────────────────────────┐       ║            ▼    │    │    │
-  │All the keys in all the │       ║   Keyspace 2    │    │    │
-  │    keyspaces for a     │       ║            │    │    │    │
-  │particular KV bucket are│       ║            │    │    │    │
-  │        scanned         │       ║            │    │    │    │
-  └────────────────────────┘       ║            │    │    │    │
-                                   ║            ▼    │    │    │
-                                   ║   Keyspace 3    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ▼            ▼    ▼    │    │
+                               ╔══════════════▶ ║    │    │    │
+                               ║                ║    │    │    │
+                               ║                ║    │    │    │
+                               ║                ║    │    │    │
+     Request    ═══════════════╝                ║    │    │    │
+                                                ║    │    │    │
+  ┌────────────────────────┐                    ║    │    │    │
+  │   All the keys for a   │                    ║    │    │    │
+  │particular KV bucket are│                    ║    │    │    │
+  │        scanned         │                    ║    │    │    │
+  │                        │                    ║    │    │    │
+  └────────────────────────┘                    ║    │    │    │
+                                                ║    │    │    │
+                                                ║    │    │    │
+                                                ║    │    │    │
+                                                ║    │    │    │
+                                                ║    │    │    │
+                                                ║    │    │    │
+                                                ▼    ▼    │    │
                                                           │    │
                                               Bucket 2    │    │
                                                      │    │    │
@@ -696,59 +608,31 @@ The all-buckets map reduce runs over all the buckets in the KV space of the vnod
                                                   KV and TS    │
                                                           │    │
                                               Bucket 1    │    │
-                                                     │    │    │
-                                   ║   Keyspace 1    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-     Request    ═══════════════════║            │    │    │    │
-                                   ║            │    │    │    │
-  ┌────────────────────────┐       ║            ▼    │    │    │
-  │All the keys in all the │       ║   Keyspace 2    │    │    │
-  │  keyspaces for all KV  │       ║            │    │    │    │
-  │  buckets are scanned   │       ║            │    │    │    │
-  └────────────────────────┘       ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            ▼    │    │    │
-                                   ║   Keyspace 3    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            ▼    ▼    │    │
-                                   ║                      │    │
-                                   ║          Bucket 2    │    │
-                                   ║                 │    │    │
-                                   ║   Keyspace 1    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            ▼    │    │    │
-                                   ║   Keyspace 2    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            ▼    │    │    │
-                                   ║   Keyspace 3    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            │    │    │    │
-                                   ║            ▼    ▼    │    │
-                                   ║                      │    │
-                                   ║          Bucket 3    │    │
-                                   ║                 │    │    │
-                                   ║                      │    │
-                                   ║                 │    │    │
-                                   ║                      │    │
-                                   ▼                 ▼    ▼    │
+                            ╔════════════▶║          │    │    │
+                            ║             ║          │    │    │
+                            ║             ║          │    │    │
+                            ║             ║          │    │    │
+     Request    ════════════╝             ║          ▼    │    │
+                                          ║               │    │
+  ┌────────────────────────┐              ║   Bucket 2    │    │
+  │All the keys for all KV │              ║          │    │    │
+  │  buckets are scanned   │              ║          │    │    │
+  │                        │              ║          │    │    │
+  └────────────────────────┘              ║          │    │    │
+                                          ║          ▼    │    │
+                                          ║               │    │
+                                          ║   Bucket 3    │    │
+                                          ║          │    │    │
+                                          ║          │    │    │
+                                          ║          │    │    │
+                                          ▼          │    │    │
+                                                     ▼    ▼    │
                                                                │
                                                  2i Indices    │
                                                           │    │
-                                                               │
                                                           │    │
-                                                               │
+                                                          │    │
+                                                          │    │
                                                           ▼    ▼
 ```
 

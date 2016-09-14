@@ -65,6 +65,8 @@ Speculative future queries:
 * eventually consistent joins
 * key-inversion MDC query setups
 
+In this context 2i indices - which are written under a transaction on the same vnode as the key they refer to are regarded as consistent indexes - eventually consistent indexes would be ones where the index->key lookup is stored on a seperate vnode to the key.
+
 Capturing statistics about data cardinality etc, to drive heuristic determination of query plans.
 
 **NOTE** Coverage Plans typically 'loop around themselves' covering all keyspaces for all vnodes *except for the last one* to which filters are applied. Where ever this document talks about at-vnode access patterns for query paths that use coverage plans they discuss the *normal case* and elide the special 'last vnode' filtered case for ease of exposition.
