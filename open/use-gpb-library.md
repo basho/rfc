@@ -64,7 +64,7 @@ Client Library       | 2016/09 Status
 `riak-ruby-client`   | ✓
 `riak-dotnet-client` | ✓
 `riak-php-client`    | ✓
-`riak-phppb-client`  | ?
+`riak-phppb-client`  | ✓
 `riak-erlang-client` | ✓
 
 ### Licensing
