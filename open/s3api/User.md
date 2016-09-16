@@ -15,15 +15,25 @@ for the S3 API being built upon Riak KV.
 
 ## Implementation
 
-### Existing Riak Security Users
+### Riak Users Today
 
 Users in Riak Security are stored in Cluster Metadata with a key of the user name specified in the
 Cluster Metadata prefix of `{<<"security">>, <<"users">>}`. The data stored in the user is a simple `proplist`
-containing any additional details about the user. This proplist can contain pretty much any keys necessary,
-so we should be able to store the additional data needed for an S3 User in this data structure.
+containing any additional details about the user.
 
-All manipulations of user/group/source data are done through the `riak_core_security` module.
+### New data needed to support S3 Authentication
 
+The proplist attached to the user key in cluster metadata will be used to store the additional data
+needed for an S3 User in this data structure. These additional data include:
+* Access Key ID (api_key ID)
+  * We will need to be able to look up a user by Access Key ID, which means we may need to add an additional record
+    in metadata that contains that mapping.
+* Shared Secret
+
+These new items will need to be either supplied by the end-user, or generated, probably in
+the same way we do in riak_cs today.
+
+## Random questions
 
 * Do we need to specify the owner of the S3 bucket on the bucket type itself?
    * Yes - S3 API returns Bucket owner in several places, so we need it
