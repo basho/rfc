@@ -17,6 +17,8 @@ In every repo used to build Riak and Riak EE:
 sed -i.orig -e 's/\<git:\/\//https:\/\//g' rebar.config
 ```
 
+Note that this does *not* change any dependency that uses the SSH protocol (i.e. `git@github.com:basho/...`). SSH would still need to be used for dependencies pointing to private Basho repositories.
+
 ### Resources
 
 * GitHub recommends `https://`: https://help.github.com/articles/which-remote-url-should-i-use/
