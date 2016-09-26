@@ -71,7 +71,7 @@ very end of the WHERE range).
    **at the moment of query execution**, and do not reflect any
    updates that the table may have received since.
 
-7. Query buffers are **not specific to a connection or clent** by which
+7. Query buffers are **not specific to a connection or client** by which
    the original initial query has been received.
 
 8. Query buffers are only accessible from the physical node they
@@ -96,23 +96,16 @@ very end of the WHERE range).
 
 ### Changes to external API
 
+#### Changes to SQL syntax
+
 1. Any SELECT query with a LIMIT or ORDER BY clause will have a query
    buffer automatically set up and associated with it.  It becomes an
    **initial query**.
 
-2. Unless the initial query has a newly proposed **ONLY keyword**, its
-   query buffer becomes available for follow-up queries (see below).
-
-3. A follow-up query with an ONLY keyword will cause the associated
-   query buffer to be dropped.
-
-4. Clients will be able to set an **expiry timeout** for query buffers,
-   in a new optional field in the `tsqueryreq` message.
-
-5. Another optional field, `buffer_id`, will be introduced in
-   `tsqueryresp` and `tsqueryreq`, which will be used to return the
-   unique ID of a newly created query buffer, as well as supply it in
-   follow-up queries.
+2. If initial query has a newly proposed **ONLY keyword**, its
+   query buffer will be unique, always created anew, and will be
+   dropped after serving the initial query. There can be no follow-up
+   queries (see below) to queries containing ONLY.
 
 
 ### Initial and follow-up queries
@@ -121,8 +114,8 @@ very end of the WHERE range).
    (referred to in this document as "eligible") will cause query
    buffers created for them.
 
-2. **Follow-up queries** are those which (a) have SELECT, FROM, WHERE, GROUP
-   BY and ORDER BY expressions identical with some previously issued
+2. **Follow-up queries** are those which (a) have SELECT, FROM, WHERE,
+   and ORDER BY expressions identical with some previously issued
    query (which is then called "initial query" in relation to those
    following it), and (b) have a matching query bufer ID in
    `buffer_id` field of the `tsqueryreq` field.
@@ -132,10 +125,7 @@ very end of the WHERE range).
    and unique otherwise.
 
 4. Each query buffer will have a **query buffer ID** uniquely
-   identifying it. This identifier will be returned in `tsqueryresp`
-   and must be supplied in `tsqueryreq` of each follow-up query in
-   order for it to be redirected to an existing query buffer with a
-   matching ID.
+   identifying it.
 
 
 ### Execution steps
@@ -168,20 +158,7 @@ very end of the WHERE range).
 
 ### Grouping and ordering
 
-### ORDER BY
-
-* We must create a key that eleveldb can use to order the values for us.
-  Query: SELECT * FROM items ORDER BY Name
-  Leveldb key: {Name, <LOCAL KEY>}
-
-#### GROUP BY
-
-ORDER BY is executed **after** GROUP BY, which means that all rows have
-to be grouped before an ORDER BY key is created.  The temp tables do
-not do group by on their own; instead, grouping is done in the
-`qry_worker` and then put in the temporary table only if there is an
-ORDER BY clause.
-
+Ordering of grouped rows is not supported.
 
 ### Diagnostics
 
