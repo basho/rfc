@@ -94,38 +94,29 @@ very end of the WHERE range).
    will have this semantics.
 
 
-### Changes to external API
-
-#### Changes to SQL syntax
-
-1. Any SELECT query with a LIMIT or ORDER BY clause will have a query
-   buffer automatically set up and associated with it.  It becomes an
-   **initial query**.
-
-2. If initial query has a newly proposed **ONLY keyword**, its
-   query buffer will be unique, always created anew, and will be
-   dropped after serving the initial query. There can be no follow-up
-   queries (see below) to queries containing ONLY.
-
-
 ### Initial and follow-up queries
 
 1. Regular, non-streaming queries with an ORDER BY or LIMIT clause
    (referred to in this document as "eligible") will cause query
-   buffers created for them.
+   buffers created for them.  In relation to subsequent queries, The
+   query will be referred to as an **Initial query**.
 
 2. **Follow-up queries** are those which (a) have SELECT, FROM, WHERE,
    and ORDER BY expressions identical with some previously issued
-   query (which is then called "initial query" in relation to those
-   following it), and (b) have a matching query bufer ID in
-   `buffer_id` field of the `tsqueryreq` field.
+   query, and (b) have a matching query bufer ID in `buffer_id` field
+   of the `tsqueryreq` field.
 
 3. A **query hash** can be computed for a query, which shall be the same
    for any two queries related to each other as initial and follow-up,
    and unique otherwise.
 
-4. Each query buffer will have a **query buffer ID** uniquely
-   identifying it.
+
+### Changes to external API
+
+1. The `#tsqueryreq` message will have a new optional field,
+   `allow_qbuf_reuse`, to enable automatic reuse of an existing query
+   buffer.  When not set, the behaviour will be to not allow query
+   buffer reuse.
 
 
 ### Execution steps
@@ -133,7 +124,8 @@ very end of the WHERE range).
 1. When an eligible query arrives, the query dispatcher
    (`riak_kv_qry`, in `do_select`) computes the query hash for this
    query and checks if a previously created query buffer exists.
-   Unless it does, it creates a new one, uniquely identified by
+   Unless it does, and unless the user has set the `allow_qbuf_reuse`
+   flag, it creates a new one, uniquely identified by
    the hash in its name; otherwise, go to step 4.
 
 2. The coordinator (`riak_kv_qry_worker`) proceeds to dispatch
@@ -145,15 +137,14 @@ very end of the WHERE range).
     * once the query buffer is created, those queued queries are
       processed from step 1.
 
-3. The query buffer manager applies the ordering such that the direct
-   SELECT on the query buffer table will fetch the records in the
-   correct order.
+3. The query buffer manager creates a key for each record such that
+   the direct SELECT on the query buffer table will fetch the records
+   in the correct order, as specified by the ORDER BY clause.
 
 4. The dispatcher rewrites the query to be executed against the query
    buffer table instead, and fetches LIMIT records at a given OFFSET.
 
-5. If there was an ONLY keyword in the LIMIT clause, the query buffer
-   is dropped; otherwise, its access time is updated.
+5. The query buffer has its access time updated.
 
 
 ### Grouping and ordering
@@ -168,6 +159,8 @@ Proper diagnostics will be done for:
   synchronous request, at any step in the pipeline (such as, a
   synchronous query without LIMIT clause and with excessively large
   WHERE range, or one with a LIMIT clause similarly too big);
+* queries having both an aggregation function or a GROUP BY clause,
+  and an ORDER BY clause.
 * streaming queries having an ORDER BY clause.
 
 
@@ -237,10 +230,7 @@ SELECT a, b, c, ts FROM $qry_buffer
 #    ensured at query buffer creation.
 LIMIT 10 OFFSET $offset
 #
-# If the query has the ONLY keyword, drop the snapshot now
-if query_is_final($query):
-    DROP TABLE $qry_buffer
-else:
-    update_snapshot_access_time($qry_buffer)
-# Reaping expired snapshots is done in a separate thread
+update_snapshot_access_time($qry_buffer)
+#
+# Reaping expired query buffers is done in a separate thread
 ```
