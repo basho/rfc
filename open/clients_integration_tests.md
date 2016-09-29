@@ -1,6 +1,8 @@
 # RFC: Clients Integration Tests
 
-2016/07/11 First Draft
+Date       | Log
+-----------|------------
+2016/07/11 | First Draft
 
 ### Abstract
 
