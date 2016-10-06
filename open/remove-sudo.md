@@ -41,7 +41,6 @@ Script modifications
 
 ## Misc
 
-* The `/usr/sbin/riak` shell script could (should) be ported to C or Go.
 * Thoroughly review the support scripts to determine what functions can be moved into the Erlang VM startup. Ideally, the `riak` command would just execute `run_erl` with the correct arguments.
 * Review installed files to ensure minimal permissions are set for use.
 * Review writable locations to ensure the `riak` user has access.
