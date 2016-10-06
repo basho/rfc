@@ -28,16 +28,20 @@ Directory / File(s)                 | Owner  | Group  | Permissions
 `/run/riak` (`/var/run/riak`)       | `root` | `riak` | `2775`
 `/var/log/riak`                     | `root` | `riak` | `2775`
 `/var/lib/riak` (and sub-dirs)      | `root` | `riak` | `2770`
-`/var/lib/riak/pipe`                | `root  | `riak` | `2770`
+`/var/lib/riak/pipe`                | `root` | `riak` | `2770`
 `/usr/lib/riak` (`/usr/lib64/riak`) | `root` | `root` | `0755`
 `/usr/lib/riak/erts-5.10.3/bin/*`   | `root` | `riak` | `0750`
 `/usr/sbin/riak`                    | `root` | `riak` | `0750`
 
-Script modifications
+#### Script modifications
 
 * `/etc/init.d/riak` - add the `--chuid riak:riak` argument to `start-stop-daemon` to ensure Riak is started as `riak:riak`. See [this PR](https://github.com/basho/node_package/pull/209)
 * `/usr/sbin/riak` - See [this PR](https://github.com/basho/node_package/pull/209)
 * `/usr/lib/riak/lib/env.sh` - See [this PR](https://github.com/basho/node_package/pull/209)
+
+#### Other modifications
+
+* The Erlang pipe directory should be moved to a writeable location in `/var/lib/riak`. `/var/lib/riak/pipe` is what I tested with.
 
 ## Misc
 
