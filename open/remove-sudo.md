@@ -25,11 +25,11 @@ Tested on Ubuntu 12 LTS, using the official `riak_2.1.4-2_amd64.deb` package.
 
 Directory / File(s)                 | Owner  | Group  | Permissions
 ------------------------------------|--------|--------|-------------------
-`/run/riak` (`/var/run/riak`)       | `root` | `riak` | `2775`
-`/var/log/riak`                     | `root` | `riak` | `2775`
-`/var/lib/riak` (and sub-dirs)      | `root` | `riak` | `2770`
+`/var/log/riak`                     | `riak` | `riak` | `0755`
+`/var/lib/riak` (and sub-dirs)      | `riak` | `riak` | `0750`
+`/var/lib/riak/pipe`                | `riak  | `riak` | `0750`
 `/var/lib/riak/pipe`                | `root` | `riak` | `2770`
-`/usr/lib/riak` (`/usr/lib64/riak`) | `root` | `root` | `0755`
+`/usr/lib/riak` (`/usr/lib64/riak`) | `root` | `root` | `0755` (no change)
 `/usr/lib/riak/erts-5.10.3/bin/*`   | `root` | `riak` | `0750`
 `/usr/sbin/riak`                    | `root` | `riak` | `0750`
 
@@ -40,6 +40,7 @@ Directory / File(s)                 | Owner  | Group  | Permissions
 * `/usr/lib/riak/lib/env.sh` - See [this PR](https://github.com/basho/node_package/pull/209)
 
 #### Other modifications
+Since the assumption is that  will start as `riak:riak`, this means the 
 
 * The Erlang pipe directory should be moved to a writeable location in `/var/lib/riak`. `/var/lib/riak/pipe` is what I tested with.
 
