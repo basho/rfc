@@ -3,6 +3,7 @@
 Date         | Log
 -------------|------------------------
 `2016-10-07` | Initial Draft
+`2016-10-13` | Minor wording changes
 
 ## Abstract
 
