@@ -6,11 +6,11 @@ Date         | Log
 
 ## Abstract
 
-SQL is not perfect but is a standard that has survived decades as the primary way of communiticating with databases. The most likely reason for this is the low barrier of entry do to its english like structure. Its easy to remember making it easy to learn, allowing people to get started with basic interactions very quickly at all experience levels.
+SQL is not perfect but is a standard that has survived decades as the primary way of communiticating with databases. The most likely reason for this is the low barrier of entry due to its english like structure. Its easy to remember making it easier to learn, allowing people to get started with basic interactions very quickly at all experience levels.
 
 ## Proposal
 
-I propose that we evolve Riak KV & TS to have a single query parser that uses a SQL'ish structure that supports all operations. All requests against Riak would be passed as queries on all interfaces.
+I propose that we evolve Riak KV & TS to have a single query parser that uses a SQL'ish structure that supports all operations. All requests against Riak would be passed as queries from all interfaces.
 
 ### Example Queries
 
