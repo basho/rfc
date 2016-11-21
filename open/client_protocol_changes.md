@@ -12,7 +12,7 @@ Supported Version Range
 ### Riak TS has three public APIs
 
 * Protobuffs using the `riak_pb` library. Internal datastructures in the client and in Riak TS are converted to records that are auto generated, which are then encoded to protobuff formatted binaries. This is supported by all TS clients.
-* TTB or `term_to_binary`, currently records in `riak_pb` are converted to binary using the `erlang:term_to_binary/1` function and sent to the client. This is supported by the erlang and java clients (TODO maybe one more??)
+* TTB or `term_to_binary`, currently records in `riak_pb` are converted to binary using the `erlang:term_to_binary/1` function and sent to the client. This is supported by the erlang, python and java clients.
 * Each type of request in the HTTP API has a code path specific to that request. Currently no flags are supported in the query path. This RFC skips the HTTP API since it doesn't support flags so there is no protocol as such to be changed.
 
 ## Scenarios
