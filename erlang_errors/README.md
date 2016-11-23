@@ -27,7 +27,7 @@ The scope of this RFC is:
 
 Elegant error handling is one of the most important and least well understood aspects of the design of the Erlang run-time system - and the one that has the most impact on both cost and quality of code bases written in Erlang.
 
-In **normal** programming languages error and exception handling is done inline. Module 1 calles Module2 which calls Module 3 etc, etc:
+In **normal** programming languages error and exception handling is done inline. Module 1 calls Module2 which calls Module 3 etc, etc:
 ```
  ┌───────────────────────────────────┐
  │            Module 1               │
@@ -92,7 +92,7 @@ In **normal** programming languages error and exception handling is done inline.
  └───────────────────────────────────┘
 ```
 
- In langauges like C++ the exception handling code can be between 10% and 25% of the total code base. When errors occur error-handling is done inline - within the same process:
+ In languages like C++ the exception handling code can be between 10% and 25% of the total code base. When errors occur error-handling is done inline - within the same process:
 ```
  ┌───────────────────────────────────┐
  │            Module 1               │
@@ -306,7 +306,7 @@ wibulate(Arko, #myrecord{} = Bob) ->
 	{ok, _Params} = hipster(Arko, Bob2).
 ```
 
-By resticting the inputs to the module as tightly as possible, and then force-matching structures everywhere any errors can be made, if not clean, then certainly cleaner.
+By restricting the inputs to the module as tightly as possible, and then force-matching structures everywhere any errors can be made, if not clean, then certainly cleaner.
 
 Erlang error handling is always the same:
 * log the error
@@ -336,7 +336,7 @@ The core recommendation is that we put in place feedback loops to collect, proce
 
 ### A Worked Example
 
-Logs were sent from Nokia this morning which I looked at as part of the ride-along.  I did some charactisation on them:
+Logs were sent from Nokia this morning which I looked at as part of the ride-along.  I did some characterisation on them:
 
 Get the number of errored crash reports:
 ```
@@ -350,7 +350,7 @@ cut -d " " -f 3-12 console.log | grep "\[error\]" | sed 's/<[0-9][0-9]*\.[0-9][0
 109
 ```
 
-Then count the occurences:
+Then count the occurrences:
 ```
 cut -d " " -f 3-12 console.log | grep "\[error\]" | sed 's/<[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*>/**PID**/g' | sort | uniq -c | sort -ndi
 ```
@@ -364,14 +364,14 @@ cut -d " " -f 3-12 console.log | grep "\[error\]" | sed 's/<[0-9][0-9]*\.[0-9][0
     462 [error] **PID** scan_key_files: error function_clause @ [{riak_kv_bitcask_backend,key_transform_to_1,[<<"\": \"0.0\", \n
 ```
 
-A process like this could be automated and pushed into a pipeline. The crash reports would need to be aggreagated by release - so a prioritisation decision would need to be taken (are we only doing this for 2.x releases etc, etc). The pipeline should be shared between the test infrastructure and the CSE team.
+A process like this could be automated and pushed into a pipeline. The crash reports would need to be aggregated by release - so a prioritisation decision would need to be taken (are we only doing this for 2.x releases etc, etc). The pipeline should be shared between the test infrastructure and the CSE team.
 
 This pipeline would be effectively an automated triage process - high frequency bugs could then be tackled. Prioritisation would best be done after the data has been examined but the following criteria suggestion themselves as options:
 
 * maximum number of instances (one debug file per customer)
 * maximum number of customers see the problem
 * by a count of errors per instance for a module/repo
-* by a count of cusomters experiencing errors for a module/repo
+* by a count of customers experiencing errors for a module/repo
 
 There are a number of obvious workflows which could be used depending on how we triage the problem and the scale of the defects exposed:
 ```
