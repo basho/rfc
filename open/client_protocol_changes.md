@@ -91,3 +91,8 @@ We can assume that the client and Riak TS node using the same protocol version c
 
 This leaves the case in point 1 where a current version client communicates with a previous version TS node, which is not yet upgraded.
 
+##### 3. New field in PB Riak Response messages
+
+A new field is added to a protobuffs message that is sent from Riak to the Client. The erlang protobuffs library cannot decode messages with optional fields that are not part of it's definition. This means that the clients must be upgraded **before** any Riak nodes, which is the opposite of the usual procedure.
+
+If a request message that is sent from the client, to Riak has a a field added to it's message then it is not possible to safely upgrade Riak or the Clients first.
