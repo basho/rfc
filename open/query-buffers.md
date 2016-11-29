@@ -160,6 +160,25 @@ very end of the WHERE range).
 5. The query buffer has its access time updated.
 
 
+### Reuse of query buffers to enable paging
+
+*Note:** Described semantics is to be implemented in version 1.6.  In
+  version 1.5, the behaviour is as if `qbuf_id` is always undefined.
+
+1. In this RFC, **paging** is understood and implemented as a series
+   of SELECT queries (a) with the same FROM, WHERE and ORDER BY
+   clauses and only differing in LIMIT and/or OFFSET clauses, and (b)
+   each follow-up query having the same `qbuf_id` as returned in the
+   `#tsqueryresp` from the original query.  Each query in this
+   sequence will be directed to the query buffer set up for the
+   original query.
+
+2. When paging queries as described above, the records included in
+   WHERE range are frozen for the duration of query buffer life cycle.
+   The important implication is that concatenated result of `SELECT
+   ... LIMIT 5 OFFSET 0` and `SELECT ... LIMIT 5 OFFSET 5` is
+   guaranteed to be the same as `SELECT ... LIMIT 10 OFFSET 0`.
+
 ### Grouping and ordering
 
 Ordering of grouped rows, such as those resulting from a query
