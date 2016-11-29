@@ -104,7 +104,7 @@ very end of the WHERE range).
 
 2. **Follow-up queries** are those which (a) have SELECT, FROM, WHERE,
    and ORDER BY expressions identical with some previously issued
-   query, and (b) have a matching query bufer ID in `buffer_id` field
+   query, and (b) have a matching query bufer ID in `qbuf_id` field
    of the `tsqueryreq` field.
 
 3. A **query hash** can be computed for a query, which shall be the same
@@ -114,20 +114,32 @@ very end of the WHERE range).
 
 ### Changes to external API
 
-1. The `#tsqueryreq` message will have a new optional field,
-   `allow_qbuf_reuse`, to enable automatic reuse of an existing query
-   buffer.  When not set, the behaviour will be to not allow query
-   buffer reuse.
+**Note:** Described changes are to be implemented in version 1.6.  In
+  version 1.5, the behaviour is as if `qbuf_id` is always undefined.
+
+1. The `#tsqueryresp` message will have a new field, `qbuf_id`,
+   an 8-byte binary uniquely identifying the query buffer associated
+   with the original eligible query.
+
+2. The `#tsqueryreq` message will have the same, optional field
+   `qbuf_id`, which if not undefined, will direct the query buffer
+   manager to check for an existing query buffer before engaging
+   coordinator.  If such query buffer exists (has not expired) and the
+   query hash of its original query matches that of the current query,
+   then the query buffer manager proceeds to fetch the records from
+   it, skipping the full cycle of query execution involving
+   coordinator and vnodes.  If `qbuf_id` is undefined, every query will
+   get a separate query buffer exclusively associated with that query
+   only.
 
 
 ### Execution steps
 
 1. When an eligible query arrives, the query dispatcher
-   (`riak_kv_qry`, in `do_select`) computes the query hash for this
-   query and checks if a previously created query buffer exists.
-   Unless it does, and unless the user has set the `allow_qbuf_reuse`
-   flag, it creates a new one, uniquely identified by
-   the hash in its name; otherwise, go to step 4.
+   (`riak_kv_qry`, in `do_select`) checks if `qbuf_id` is supplied in
+   the original request, and if so, whether a previously created query
+   buffer exists.  If not, it creates a new one, uniquely identified;
+   otherwise, go to step 4.
 
 2. The coordinator (`riak_kv_qry_worker`) proceeds to dispatch
    subqueries, collects and sends chunks to the query buffer manager
@@ -201,7 +213,10 @@ pseudocode):
 $query_hash = make_query_hash($query)
 $qry_buffer = "#" + str($query_hash)
 #
-if not query_hash_exist($query_hash):
+# $qbuf_id is optionally supplied in the request
+#
+if not (query_buffer_exist($qbuf_id) and
+        $query_hash == make_query_hash(get_orig_query($qbuf_id))):
     CREATE TABLE $qry_buffer (
       a VARCHAR NOT NULL,
       b VARCHAR NOT NULL,
