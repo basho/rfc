@@ -12,11 +12,12 @@ Could the following people please review this document:
 
 This is an RFC for the temporary tables, or **query buffers**, a means
 to deal with arbitrarily big queries that would otherwise result in
-OOM conditions on the query coordinator node.
+OOM conditions on the query coordinator node.  It is also an
+infrastructure layer underlying ORDER BY, LIMIT and OFFSET features.
 
 ## Background
 
-In Riak TS 1.3, in order to avoid accumulating too much data on the
+In Riak TS 1.4, in order to avoid accumulating too much data on the
 heap, the query engine in riak_kv (`riak_kv_qry_worker`) enforces
 restrictions on query range, effectively limiting the range of the
 WHERE clause to 5 quanta.  This is a sensible, if crude and not always
@@ -27,7 +28,7 @@ from all of them, records are repackaged, encoded, and sent to the
 client.
 
 To support LIMIT and ORDER BY clauses for queries with arbitrary WHERE
-ranges, the coordinator needs to have the entire scan range-full of
+ranges, the coordinator needs to have the entire scan range-ful of
 data in order to (a) sort the result by the field specified in the
 ORDER BY clause, and only then (b) count the number of records as
 specified by the LIMIT clause.
@@ -51,7 +52,7 @@ very end of the WHERE range).
    a temporary **disk-backed storage**.
 
 2. Query buffers will be automatically enabled for queries having a
-   LIMIT or ORDER BY clause.
+   LIMIT, OFFSET or ORDER BY clause.
 
 2. Data are stored in a **separate, isolated instance of eleveldb**
    running **colocally with the coordinator**.
@@ -149,7 +150,10 @@ very end of the WHERE range).
 
 ### Grouping and ordering
 
-Ordering of grouped rows is not supported.
+Ordering of grouped rows, such as those resulting from a query
+containing GROUP BY clause and/or any of the aggregation functions, is
+not supported.
+
 
 ### Diagnostics
 
