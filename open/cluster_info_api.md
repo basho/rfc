@@ -1,6 +1,6 @@
 # RFC: Cluster API Info 
 
-2016/06/01 2nd Draft - Markdown format
+2016/06/20 Final Draft
 
 ### Abstract
 
@@ -41,53 +41,75 @@ This information can then be used in the clients to make better choices about:
 %% erlang 
 {ok, ClusterApiInfo} = riakc_pb_socket:get_cluster_api_info(Pid).
 
-{cluster_api_info,
-  {“2016-05-17T16:47:55+00:00”},
+[
+  {timestamp, “2016-05-17T16:47:55+00:00”},
   {available_api , [
-    {api_kv_get, true}, 
+    {api_kv_get, available}, 
     {api_kv_list_buckets, no_permission},
-    {api_search_v1_search_query, false},
-    {api_search_v2_search_query, true}, 
+    {api_search_v1_search_query, unavailable},
+    {api_search_v2_search_query, available}, 
     {api_dt_fetch, no_permission},
-    {api_dt_type_hyperloglog, true},
-    {api_ts_query, true},
-    {api_ts_query_with_ttb, true},
+    {api_dt_type_hyperloglog, available},
+    {api_ts_query, available},
+    {api_ts_query_with_ttb, available},
     ...
   ]},
   {nodes_info, [
-    {node_info, ‘riak@192.168.1.200’, “192.168.1.200”, 8087, 
-      "riak 2.1.3", valid, up, [api_kv, api_ts, api_2i, ...]},
+    {node_info, 
+      {node_name, ‘riak@192.168.1.200’}
+      {ip_address, “192.168.1.200”, 8087}, 
+      {pb_port, 8087},
+      {version_string, "riak 2.1.3"}, 
+      {status, valid}, 
+      {available, up}, 
+      {facets, [api_kv, api_ts, api_2i, ...]}},
     ...
   ]}
-}
+]
 ```
 
 ##### Code Example 1.2 - Erlang Specs:
 ```erlang
 %% erlang
--type api_entry :: {string(), ‘available’|’unavailable’|’no_permission’}.
 
--record(cluster_api_info, {timestamp :: string(),
-        available_api :: [api_entry()],
-        nodes :: [node_info()] | ‘no_permission’ }).
+get_cluster_api_info(Pid) -> ClusterApiInfo
+Pid = pid()
 
--record(node_info, {name :: node(),
-	  ip_address :: string(),
-	  pb_port :: pos_integer(),
-	  version_string :: string(),
-	  status :: atom(),
-	  available :: atom(),
-	  api_facets :: [atom()]}).
+%% The types listed below should be availble in a header file for easier cross-repo consumption
+ClusterApiInfo = [cluster_api_info_result_item()]
+
+cluster_api_info_result_item() = 
+  {timestamp, Timestamp :: string()} |
+  {available_api, Api :: [api_entry()]} |
+  {nodes_info, NodesInfo :: [node_info()] | ‘no_permission’}
+
+api_entry() = {facet_detail_name(), ‘available’|’unavailable’|’no_permission’}.
+
+node_info() = [node_info_item()]
+
+node_info_item() = 
+  {ip_address, IpAddress :: string()} |
+  {pb_port, PbPort :: pos_integer()} |
+  {version_string, VersionString :: string()} |
+  {status, Status :: status()} |
+  {available, Available :: available()} |
+  {api_facets, Facets :: [facet_detail_name()]}
+
+status() = 'valid' | 'leaving' | 'exiting' | 'joining' | 'down'
+available() = 'up' | 'down'
+facet_detail_name() = atom()
+
 ```
 
+
 notes: 
- - `api_entry()` contains an API key, and a status atom.  The status atom will default to `true` on most API features.  `false` will be used for those features that are supported but specifically turned off, such as search.  `no_permission` will be used when the feature is supported, but the user has no permissions to use it. 
+ - `api_entry()` contains an API key, and a status atom.  The status atom will default to `available` on most API features.  `unavailable` will be used for those features that are supported but specifically turned off, such as search.  `no_permission` will be used when the feature is supported, but the user has no permissions to use it. 
  - `no_permission` in the nodes field is used when the user does not have sufficient permissions to access cluster information.
  - `timestamp` is an ISO 8601 formatted timestamp string
  - `api_set` is a list of key/values that list the minimum covering set of common API facet details. 
  - `version_string` is the version string reported from each Riak node.
- - `status` is the node status as reported in [cluster status command](http://docs.basho.com/riak/kv/2.1.4/using/admin/commands/#status). Valid values are `valid`, `leaving`, `exiting`, `joining`, and `down`. 
- - `available` is the node availability as reported in [cluster status command](http://docs.basho.com/riak/kv/2.1.4/using/admin/commands/#status). Valid values are `up` and `down`. 
+ - `status` is the node status as reported in [cluster status command](http://docs.basho.com/riak/kv/2.1.4/using/admin/commands/#status).
+ - `available` is the node availability as reported in [cluster status command](http://docs.basho.com/riak/kv/2.1.4/using/admin/commands/#status).
  - `api_facets` are the collection of facet groups reported for each node.  Valid values are listed in [Table 10.1]().
 
 
@@ -150,9 +172,7 @@ message NodeInfo {
 ```
 
 #### 4. TTB Message Changes
-Open Question: Do we want to include this in the list of supported TTB options?
-
-Add handling to accept a `{cluster_api_info_req}` message, return the `cluster_api_info` record as listed in Code Examples [1.1](#code-example-11---request-and-response-example) & [1.2](#code-example-12---erlang-specs).
+This message set will not be available on the TTB interface.
 
 
 #### 5. Client Changes

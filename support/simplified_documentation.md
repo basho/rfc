@@ -20,7 +20,7 @@ Our documentation is not fit for purpose on a number of levels:
 * technical specification is scattered over many places - we (or me) use Google Drive to much
 * we waste time finding agreement about what we mean
   
-This slidedeck is how we will start to fix this
+This slide deck is how we will start to fix this
   
 ---
   
@@ -246,10 +246,10 @@ from TS work-in-progress documentation
 
 # Section 1 - SQL Foundation
 
-The lexer/parser is a straight copy of the `yacc/lexx` structure in the Word Doco into `yecc/leex` - it is important to preserve that - see here:
+The lexer/parser is a straight copy of the `yacc/lex` structure in the Word Doco into `yecc/leex` - it is important to preserve that - see here:
 https://github.com/basho/riak_ql/blob/develop/src/riak_ql_parser.yrl#L242
 
-This section should contain an extract from that doco copy'pasta's so that `riak_ql_lexer.xrl` and `riak_ql_parser.yrl` can be reviewed against it.
+This section should contain an extract from that doco copy-pasta's so that `riak_ql_lexer.xrl` and `riak_ql_parser.yrl` can be reviewed against it.
 
 This review will often turn up edge cases we haven't thought about
 
@@ -305,7 +305,7 @@ runs on vnode2
 This is a `Query Plan` and why we need the `EXPLAIN` keyword on the Product Roadmap - it will return this as its value.
 
 This sequence MAY contain pseudo-code for flow control. An example would be for a `LIMIT` query:
-* **RUN** this subquery
+* **RUN** this sub-query
 * **IF** `LIMIT` is reached return to client
 * **ELSE** run another sub-query
 
