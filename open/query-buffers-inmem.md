@@ -22,7 +22,7 @@ We propose two solutions:
 
 Chunks are accumulated at the coordinator node, in the worker process; new chunks are appended as they arrive; when done, the standard `lists:sort` is applied on the resulting total, and `lists:sublist(Results, Offset, Limit)` extracts the records that get sent to the client.
 
-Because there is no ORDER BY clause, records are sent to the client in the table natural order.  Importantly, any DESC key qualifiers will not be honoured.
+Because there is no ORDER BY clause, records are sent to the client in the table natural order.
 
 Existing overload protection mechanism applies, limiting the `Results` term size to the maximum specified in riak.conf (key `riak_kv.query.timeseries.max_returned_data_size`), per worker process.  Queries projected to accumulate greater than `max_returned_data_size` are cancelled.  Theoretically, because there can be up to `riak_kv.query.concurrent_queries` workers in operation at any time, total VM heap usage can be up to `max_returned_data_size * concurrent_queries`.
 
