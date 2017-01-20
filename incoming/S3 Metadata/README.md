@@ -21,14 +21,20 @@ This coupling implies a protocol (i.e. you can't simply change the namespace for
 ### Proposal
 
 #### Normalize namespace for S3-related boundaries
-In the case of Riak S3 Buckets, there is presently no prefix, which could lead to some interesting, probably unexpected behavior for customers who run both KV and S3 loads on the same cluster. We should define one prefix, and apply it uniformly across riak_core_metadata, the concept of a Riak S3 Bucket, and `riak_object` metadata.
+We should have a uniform prefix for S3-related boundaries. As noted above, Riak S3 Buckets are currently defined by the mere existence of same-named bucket-types and buckets with username metadata. The lack of a prefix here could lead to interesting, unexpected behavior for customers who run both KV and S3 loads on the same cluster. We should define one prefix, and apply it uniformly across riak_core_metadata, the concept of a Riak S3 Bucket, and `riak_object` metadata.
 
 Speaking with Jason Voegele on the topic, he suggested we increase the specifity of our prefix and avoid collisions by using the well-known reverse domain name pattern: _com.basho.riak.s3_.
 
-I concur.
+Then, our internal S3 Bucket definition would look like:
+* `BKey = {'com.basho.riak.s3.bucket_name', 'com.basho.riak.s3.bucket_name'}`,
+
+and the riak core metadata on a user would look like:
+* `com.basho.riak.s3.access_key_id`
+
+which brings us to the area that originally brought this to mind, `riak_object` metadata:
 
 #### Write Riak Object Metadata on S3 Put
-Instead of computing the etag as the md5 of the version vectors on read, in S3, we will:
-* Compute the MD5 of the request body (this also lets us validate client-set md5 sum)
-* Store that as e.g. `com.basho.riak.s3.etag`
-* Store size as e.g. `com.basho.riak.s3.size`, etc.
+Instead of computing the etag as the md5 of the version vectors on read, in S3, we should:
+* Compute the MD5 of the request body (this also lets us validate a client-supplied md5 sum)
+* Store that as `com.basho.riak.s3.etag`
+* Store size as `com.basho.riak.s3.size`, etc.
