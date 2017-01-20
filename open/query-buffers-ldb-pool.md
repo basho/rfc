@@ -1,5 +1,7 @@
 # RFC: Query buffers Optimisations: a pool of pre-opened leveldb instances
 
+This RFC is superseded by a [single-instance leveldb backend RFC](query-buffers-single-ldb.md).
+
 ### Abstract
 
 Query buffers in 1.5.0 involve `eleveldb:open`, which can be done asynchronously, in advance.
