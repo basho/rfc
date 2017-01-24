@@ -25,7 +25,7 @@ key_prefix(Bucket, Key) ->
     <<16,0,0,0,3,  %% hand-written bits to avoid sext:encode'ing constant parts
       12,183,128,8,
       16,0,0,0,2,
-      <<"expire-me">>/binary,
+      <<"$qbuf">>/binary,      %% bucket type reserved for query buffers
       EncodedBucket/binary,
       KeyPrefix/binary>>.
 ```
@@ -38,11 +38,26 @@ and
 
 ```
 
+### Query buffer lifecycle
+
+
+
 ### Deleting query buffers
 
-Another challenge with single-instance implementation is, how to delete the records after query buffers are no longer needed and reclaim disk space.  Leveldb has an automatic bucket expiry feature, currently (as of 2017-01-20) in development, which we can use for this purpose.
+Another challenge with single-instance implementation is, how to delete the records after query buffers are no longer needed and reclaim disk space.  Leveldb has an *automatic bucket expiry* feature, currently (as of 2017-01-20) in development, which we can use for this purpose.
 
-Because buckets will need to be deleted after the last `put` and subsequent `get`, setting a fixed bucket expiry time is not suitable.  A better solution would be to communicate to leveldb expiry module a list of buckets we want to drop.  The expiry module will then work asynchronously to delete the discardable buckets and reclaim disk space.
+The expiry module *asynchronously queries* the Erlang code for expiry details of the buckets it sees appearing in the database (via `eleveldb:callback_router`), which it reads from bucket properties `expiry_enabled` and `expiry_minutes`.  It then proceeds to delete the discardable buckets and reclaim disk space.
+
+The query buffers manager will provide expiry details for the buckets it owns, to the expiry module.  For buckets it no longer needs, the properties will be `[{expiry_enabled, true}, {expory_minutes, 0}]`; for active buffers, it will be `[{expiry_enabled, false}]`.
+
+### Query buffer lifecycle
+
+Internally, query buffer manager keeps a list of query buffers.  Each record contains the unique query_id of the query it was created for, and a status field denoting the current stage in the lifecycle:
+
+* `collecting_chunks`: collection of data is in progress.
+* `serving_fetches`: all chunks collected, buffer becomes available to serve fetches (normally, there is one fetch operation to be served as buffers are not reusable at the moment (as of 1.5.x).  Expiry countdown starts.
+* `expiring`: buffer has expired and is no longer available for fetches.  Query buffer manager awaits a leveldb expiry request on this buffer.
+* `expired`: leveldb expiry module has been notified about this buffer expiring, and will work asynchronously to delete it at its earliest convenince.  Query buffer manager removes the qbuf record from the internal list on the next tick.
 
 ### References
 
