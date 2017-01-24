@@ -11,18 +11,18 @@
 //
 msc {
 
-	// Image defaults
-	width="1200", wordwraparcs="1";
+  // Image defaults
+  width="1200", wordwraparcs="1";
 
-	// declare objects
-	// This is a cluster with 3 nodes for exposition purposes
-	"V2 Node 1", "V1 Node 2", "V1 Node 3";
+  // declare objects
+  // This is a cluster with 3 nodes for exposition purposes
+  "V2 Node 1", "V1 Node 2", "V2 Node 3";
 
-	"V2 Node 1" => "V2 Node 1" [label="Register Capabilities"];
+  "V2 Node 1" => "V2 Node 1" [label="Register Capabilities"];
 
-	"V1 Node 2" => "V1 Node 2" [label="Register Capabilities"];
+  "V1 Node 2" => "V1 Node 2" [label="Register Capabilities"];
 
-	"V1 Node 3" => "V1 Node 3" [label="Register Capabilities"];
+  "V2 Node 3" => "V2 Node 3" [label="Register Capabilities"];
 
     ...;
 
@@ -34,7 +34,7 @@ msc {
 
     "V1 Node 2" box "V1 Node 2" [label="\nCapabilities are gossiped about\n"],
     "V2 Node 1" box "V2 Node 1" [label="\nCapabilities are gossiped about\n"],
-    "V1 Node 3" box "V1 Node 3" [label="\nCapabilities are gossiped about\n"];
+    "V2 Node 3" box "V2 Node 3" [label="\nCapabilities are gossiped about\n"];
 
     ...;
 
@@ -44,14 +44,14 @@ msc {
 
     |||;
 
-	"V2 Node 1" => "V2 Node 1" [label="New Implementation Of Existing User Feature"];
+  "V2 Node 1" => "V2 Node 1" [label="New Implementation Of Existing User Feature"];
 
-	"V2 Node 1" => "V2 Node 1" [label="Check Capabilities"];
+  "V2 Node 1" => "V2 Node 1" [label="Check Capabilities"];
 
-	"V2 Node 1" => "V2 Node 1" [label="Output V1 data format"];
+  "V2 Node 1" => "V2 Node 1" [label="Output V1 data format"];
 
-	"V2 Node 1" -> "V1 Node 2" [label="Use V1 data format"];
+  "V2 Node 1" -> "V1 Node 2" [label="Use V1 data format"];
 
-	"V2 Node 1" -> "V1 Node 3" [label="Use V1 data format"];
+  "V2 Node 1" -> "V2 Node 3" [label="Use V1 data format"];
 
 }
