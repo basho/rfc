@@ -39,7 +39,18 @@ Each group in the query results of a query eith a `GROUP BY` clause has it's own
 
 Rows are still grouped on the coordinator.
 
-For each time function in the `GROUP BY` clause, a column will be added with the timestamp value for the quantum of that group. The column will always be called `time` and the type is `timestamp`. Without this column, it would not be possible to see which time, the group values were for. Behaviour agreed with Pavel, based on InfluxDB behaviour.
+To allow the user to see the starting timestamp for the group, the `time/2` function will be supported in the select clause.
+
+```sql
+SELECT time(myts,1m), COUNT(*) FROM mytable
+GROUP BY time(myts, 1m);
+```
+
+The arguments must be the same as to a call to the function in the group by clause. If the arguments to the time function do not match to a call in the group by clause an error is returned. This is because having different arguments may result in multiple values for the same group, which cannot be represented by a row.
+
+Multiple calls to the time function are allowed in the select clause, as long as they map to a call in the group by clause.
+
+If there is no group by clause, the time function may have any arguments, as long as the arguments meet the type signature, and the column exists.
 
 If a time point in the quanta does not have any rows then it will **not** produce a row in the grouped query results. For example if a query grouped on days then the groups might be 1,2,3,7,8 days, and have gaps in the data. Behaviour agreed with Pavel.
 
