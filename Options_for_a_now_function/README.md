@@ -47,7 +47,7 @@ This problem never occurs with `riak-shell` because it always connects to the sa
 
 ## The Correct Way
 
-The correct way is to implement a consistent server-side timestamp path. That timestamp could be used with a SQL command like
+The correct way is to implement a consistent server-side timestamp path. That timestamp could be used with a SQL command like:
 
 ```sql
 INSERT INTO mytable VALUES("a", now());
@@ -87,6 +87,7 @@ There are two variants on the ***correct way***:
 In this world `now()` in insert is seen as a convenience for play about and is optimised for onboarding and not production.
 
 In this world we introduce a lexical token in the `riak-shell` that forces time serialisation in the `riak-client` only:
+
 ![Convenience Option](./convenience_option.png)
 
 ## Choices

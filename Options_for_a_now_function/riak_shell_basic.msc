@@ -54,7 +54,7 @@ msc {
 
 	|||;
 
-	"Node 2" => "Node 3" [label = "write {a, 12:00:01}"];
+	"Node 2" => "Node 3" [label = "write {b, 12:00:01}"];
 
     |||;
 

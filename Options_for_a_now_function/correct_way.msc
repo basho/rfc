@@ -50,7 +50,7 @@ msc {
 
     |||;
 
-	"Client" => "Node 2" [label = "send INSERT INTO\n\nmytable VALUES(a, now())"];
+	"Client" => "Node 2" [label = "send INSERT INTO\n\nmytable VALUES(b, now())"];
 
     |||;
 
