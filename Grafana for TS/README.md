@@ -1,5 +1,7 @@
 # RFC: GRafana integration for Riak TS (GRiTS) Working Around the Gap
 
+Discussion: https://github.com/basho/rfc/pull/1
+
 ### Abstract
 Assuming that all gap in functionality exposed by Riak TS and necessary for
 developing a Grafana Datasource for Riak TS, the project may not only begin
