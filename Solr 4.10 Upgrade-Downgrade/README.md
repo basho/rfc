@@ -1,5 +1,7 @@
 # RFC: Solr 4.10 Upgrade/Downgrade
 
+Discussion: https://github.com/basho/rfc/pull/14
+
 ### Abstract
 
 Riak 2.2 includes an upgrade of the underlying Solr server runtime from version 4.7 (with which Riak 2.0 originally shipped) to version 4.10.4.  Upgrade of Solr 4.10.4 has implications for Riak Search 2.0 indices that have were created before the upgrade.  Specifically, if customers want to exploit indexing and search features in Solr 4.10.4 that are not in Solr 4.7 (at present no such features are known to the engineering team), then existing indices will need to be reconfigured and any data stored in these indices will need to be reindexed.  As part of the upgrade process, unmodified solr core configurations will be automatically upgraded by Yokozuna, in a manner described below.  Downgrade is complicated by the fact that any changes to existing indices made spcifically for Solr 4.10.4 are not backwards-compatible with Solr 4.7.  So any indices that have been modified or created after the upgrade will need to be reconfigured and any associated data will need to be reindexed.
