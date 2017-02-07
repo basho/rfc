@@ -8,6 +8,8 @@ Could the following people please review this document:
 
 # RDF: Snapshots
 
+Discussion: https://github.com/basho/rfc/pull/13
+
 # Abstract
 
 This is an RFC for snapshots, or static views of a SELECT query, which
