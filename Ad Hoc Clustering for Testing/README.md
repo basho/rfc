@@ -1,5 +1,7 @@
 # RFC: Ad-hoc Clustering for Repeatable Test Cycles
 
+Discussion: https://github.com/basho/rfc/pull/2
+
 ### Abstract
 
 We have several use cases in different contexts where we need ad-hoc Riak clusters. For instance, build/test cycles need ad-hoc clusters in order to run unit and integration tests; there are also demo and sales use cases where we want to spin up an ad-hoc cluster in order to demonstrate Riak's operational flexibility. Unfortunately, creating Riak clusters is not easy when the operations are all automated and non-interactive. It's not clear what steps must be taken and in what order to end up with a working cluster. Cycle times of minutes are not unusual. That may not be a problem for one-off type tasks, where you can afford to wait for several minutes while a cluster settles. But when creating ad-hoc clusters, especially if the cluster creation happens frequently within the scope of a test (like starting a cluster with a clean slate), waiting minutes for a cluster to "settle" provides a suboptimal user experience.
