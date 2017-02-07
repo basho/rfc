@@ -1,5 +1,7 @@
 # RFC: Bigset AAE Protocol
 
+Discussion: https://github.com/basho/rfc/pull/15
+
 ### Abstract
 
 The purpose of this RFC is to document, review, and poke holes with how we are
