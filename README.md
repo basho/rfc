@@ -19,9 +19,8 @@ RFCs.
     * Push the branch to github.
     * File a pull request to merge your branch to `master`.
 4. Solicit comments on the RFC via the open pull request.
-    * Minor points of detail can be line comments.
-    * Significant changes/clarifications should be general comments on the pull request.
-    * Make any changes to the RFC as seem appropriate.
+    * Line comments are not possible with this model, so all comments must be general PR comments.
+    * Make any changes to the RFC as seem appropriate and push directly to the files in `master`.
 5. When consensus is reached merge the pull request to `master`.
     * No official approval needed to merge the PR.
     * "No one cares" is a valid reason to merge the PR.
@@ -39,7 +38,7 @@ place.
 #### Naming Folders
 
 All RFCs must go into a dedicated folder as `README.md`. The title of
-the RFC should be captured (and probably shortened) in the name of the
+the RFC should be captured (and possibly shortened) in the name of the
 folder.
 
 Make the name only as long as is necessary to capture essential
