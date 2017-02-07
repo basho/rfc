@@ -4,6 +4,8 @@ Date       | Log
 -----------|------------
 2016/07/11 | First Draft
 
+Discussion: https://github.com/basho/rfc/pull/11
+
 ### Abstract
 
 This document outlines the requirements for testing Riak Client libraries.
