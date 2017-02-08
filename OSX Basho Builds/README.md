@@ -1,5 +1,7 @@
 # RFC: OSX for basho-builds
 
+Discussion: https://github.com/basho/rfc/pull/26
+
 ### Abstract
 
 Devops would like to create a build infrastructure for OSX that closely mimics the current build infrastructure for other operating systems. We hold the following tenets for any OS that is introduced in basho-builds:
