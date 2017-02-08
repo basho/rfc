@@ -1,5 +1,7 @@
 # RFC: Riak TS SQL "WHERE _field_ IS NULL" Optimizations
 
+Discussion: https://github.com/basho/rfc/pull/33
+
 ### Abstract
 Several query optimization opportunities are identified within the SQL spec.
 This RFC targets two such optimizations and query normalization steps for
