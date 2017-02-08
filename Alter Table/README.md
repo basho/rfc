@@ -1,6 +1,8 @@
 Alter Table RFC
 ---------------
 
+Discussion: https://github.com/basho/rfc/pull/25
+
 This is an RFC for alter table operations:
 * adding a column
 * removing a column
