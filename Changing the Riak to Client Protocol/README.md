@@ -1,6 +1,8 @@
 
 # Changing the Riak to Client Protocol
 
+Discussion: https://github.com/basho/rfc/pull/46
+
 The scope of this RFC describes the current APIs that Riak Time Series extends, and what they must do to allow smooth upgrade and downgrade against client versions.
 
 ### Gloassry
