@@ -1,5 +1,7 @@
 # RFC: Last Write Wins Registers
 
+Discussion: https://github.com/basho/rfc/pull/41
+
 ### Abstract
 
 Last Write Wins (hereafter LWW) or Write Once (also First Write Wins,
