@@ -1,14 +1,59 @@
 # Basho RFCs
 
-This repo contains documentation in Markdown format that detail architectural RFCs that require the attention of the Architecture team.
+This repo contains documentation in Markdown format that detail RFCs
+that require feedback from architecture and other relevant parties.
 
-### Creating new RFCs
+The workflow for RFCs has undergone significant changes in late
+October 2016, so expect some turbulence while we sort through existing
+RFCs.
 
-To create a new RFC, submit a PR to this repo that contains a new file or directory inside the `open/` directory. This indicates that a new RFC submission is available for comment. While the RFC is in the "open" status, additional commits and comments can be made to discuss the details of the RFC.
+### RFC Workflow
+
+1. Create a new folder under `incoming/` directly on the `master` branch.
+    * Create a `README.md` in the folder for the RFC itself (see below for template).
+    * Supporting materials (typically diagrams) can be placed in the same folder.
+    * See **Naming Folders** below.
+2. Push `master` to github.
+3. Create a new branch.
+    * Move the folder to the top level of the `rfc` repository.
+    * Push the branch to github.
+    * File a pull request to merge your branch to `master`.
+4. Solicit comments on the RFC via the open pull request.
+    * Line comments are not possible with this model, so all comments must be general PR comments.
+    * Make any changes to the RFC as seem appropriate and push directly to the files in `master`.
+5. When consensus is reached merge the pull request to `master`.
+    * No official approval needed to merge the PR.
+    * "No one cares" is a valid reason to merge the PR.
+    * Add a section at the top of the `README` to indicate the outcome of the discussion and link to the pull request.
+    * If a project to implement the RFC exists, add the Jira link to the pull request and `README`.
+
+Future status updates should primarily be directed to Jira, but it is
+perfectly valid to add useful status information in `README` without a
+new pull request.
+
+Only open new pull requests against a merged RFC when extended
+commentary is useful/necessary. Otherwise, just change the document in
+place.
+
+#### Naming Folders
+
+All RFCs must go into a dedicated folder as `README.md`. The title of
+the RFC should be captured (and possibly shortened) in the name of the
+folder.
+
+Make the name only as long as is necessary to capture essential
+information for findability and discoverability. If it impacts
+handoff, make sure `Handoff` is in the name.
+
+Use [title case](http://www.titlecapitalization.com) for the folder
+name. Use a space to separate each word. Underscores and hyphens are
+just visual clutter for a directory structure that won't be processed
+programmatically.
 
 #### RFC Template
 
-Here's a skeleton RFC template to use that outlines the key points that need to be addressed when creating an RFC:
+Here's a skeleton RFC template to use that outlines the key points
+that need to be addressed when creating an RFC:
 
 ```
 # RFC: <Title>
@@ -38,28 +83,27 @@ Here's a skeleton RFC template to use that outlines the key points that need to 
 - [http://github.com/owner/project/pr/1](GitHub PR Reference)
 ```
 
-#### Source code and POCs
+#### Source Code and POCs
 
-It's acceptable to include source for POCs and prior work inside a directory created for an RFC. To do that, create a hierarchy inside the `open/` directory and include a `README.md` which is derived from the above template and include any relevant source code or snippets that go along with the RFC you're creating.
+It is useful to include source for POCs and prior work inside the directory created for an RFC. Example:
 
 ```
-open/
-  slugline_for_rfc/
-    README.md
+<rfc folder>/
     src/
       rfc_poc/
         src/my_poc.erl
 ```
 
-### Changing the status of an RFC
+### Leveraging the RFC
 
-To change the status of an RFC, submit a PR to this repo that moves the RFC from the `open/` directory to one of `unassigned/`, `assigned/`, or `complete/`. Once an RFC has changed status, the tree should be tagged so that future links can always access the RFC as it was at that point in time.
+Our `rfc` repository is closed to the public. When the RFC is
+instantiated inside our code base, if the RFC is close enough to the
+final implementation to be useful, copy it into an appropriate
+documentation folder.
 
-### Code to implement the RFC
-
-When creating a new project to implement or work on the features of an RFC, a backlink from that project to the RFC should be prominent in the README of the project, or in comments in source code if changing existing code. It's acceptable to use either a commit hash or a tag in the link to ensure the version of RFC being used as a reference is accessible in the future.
-
-In general, changes should not be made to the content of the RFC once it has moved from "open" to another status. If changes /are/ necessary, however, it's important to make sure that links to the RFC reflect the commit hash or tag associated with that change to ensure code changes are referencing the version of RFC that directed the change.
+If it needs to be cleaned up before doing so, please make the changes
+in the `rfc` repository first, then copy it. There is no need for a
+pull request to update this repository's copy.
 
 ### Feedback
 

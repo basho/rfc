@@ -1,0 +1,29 @@
+{
+  "dependencies": {
+    "basho-riak-client": "^2.1.2",
+    "exec-retry": "^2.1.0",
+    "expand-home-dir": "0.0.3",
+    "retry": "^0.9.0"
+  },
+  "devDependencies": {
+    "blanket": "^1.2.3",
+    "mocha": "^2.4.5",
+    "mocha-multi": "^0.9.0",
+    "unit.js": "^2.0.0"
+  },
+  "main": "index.js",
+  "config": {
+    "blanket": {
+      "pattern": [
+        ""
+      ],
+      "data-cover-never": [
+        "node_modules",
+        "test"
+      ]
+    }
+  },
+  "scripts": {
+    "test": "multi='dot=- html-cov=test/coverage.html' ./node_modules/mocha/bin/mocha -r blanket --reporter mocha-multi --no-colors $(find test/**/*.js)"
+  }
+}
