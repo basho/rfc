@@ -1,5 +1,7 @@
 # Query Parser: Evolving the user experience
 
+Discussion: https://github.com/basho/rfc/pull/37
+
 Date         | Log
 -------------|------------------------
 `2016-10-13` | Initial Draft
