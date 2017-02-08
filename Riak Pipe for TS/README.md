@@ -1,6 +1,8 @@
 A PoC using Riak Pipe for query distribution RFC
 ------------------------------------------------
 
+Discussion: https://github.com/basho/rfc/pull/24
+
 This RFC outlines a PoC to see if riak pipe is an appropriate mechanism to distribute query components around the ring for Riak TS instead of overlaying on the 2i riak_index gen_fsm system.
 
 Purpose
