@@ -1,5 +1,7 @@
 # RFC: Use GitHub Milestones For Release Planning
 
+Discussion: https://github.com/basho/rfc/pull/34
+
 ## Revision History
 
 Date         | Description
