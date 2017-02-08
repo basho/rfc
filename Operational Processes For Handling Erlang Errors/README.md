@@ -1,5 +1,7 @@
 # Operational Processes For Handling Erlang Errors
 
+Discussion: https://github.com/basho/rfc/pull/47
+
 ## Introduction
 
 This document outlines business process issues for handling Erlang errors reported in normal customer usage
