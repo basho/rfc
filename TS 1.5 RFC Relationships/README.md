@@ -1,6 +1,8 @@
 The 3 TS 1.5 RFCs - Their Relationship
 --------------------------------------
 
+Discussion: https://github.com/basho/rfc/pull/22
+
 There are three separate RFCs making proposals for the Time Series query system post-1.5
 
 The are:
