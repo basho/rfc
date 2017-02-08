@@ -2,6 +2,8 @@
 
 2016/08/24 1st Draft - Brett Hazen
 
+Discussion: https://github.com/basho/rfc/pull/20
+
 ### Abstract
 
 Since Time Series was forked from mainstream Riak KV in 2015, development has diverged
