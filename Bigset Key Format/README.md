@@ -1,5 +1,7 @@
 # RFC: Bigset Key Format (On Disk)
 
+Discussion: https://github.com/basho/rfc/pull/19
+
 ### Abstract
 
 [Bigsets][bigset] depends on the sort order of elements. Sext encoding
