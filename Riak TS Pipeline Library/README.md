@@ -1,6 +1,8 @@
 Riak TS Pipeline Library RFC
 ----------------------------
 
+Discussion: https://github.com/basho/rfc/pull/23
+
 It is clear that the old idea of implementing pipeline operations written in C inside the leveldb layer and as a NIF at the coordinator is a non-starter. Operations-in-place on binaries will likely impact the VM in unpredictable ways.
 
 Purpose
