@@ -1,5 +1,7 @@
 # RFC: Smoke Testing
 
+Discussion: https://github.com/basho/rfc/pull/48
+
 ## Revision History
 
 | Date         | Description |
