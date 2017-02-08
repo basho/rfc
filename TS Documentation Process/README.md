@@ -1,5 +1,7 @@
 # Introduction To The Documentation Process
 
+Discussion: https://github.com/basho/rfc/pull/29
+
 This document describes:
 * which documents should be completed
 * the order in which they should be done
