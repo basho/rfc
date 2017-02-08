@@ -1,5 +1,7 @@
 # RFC: Thumbs, A simple integration robot
 
+Discussion: https://github.com/basho/rfc/pull/21/
+
 ### Abstract
 
 Once upon a time, Bors was chosen to perform the duties of integration robot.
