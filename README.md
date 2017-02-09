@@ -3,17 +3,15 @@
 This repo contains documentation in Markdown format that detail RFCs
 that require feedback from architecture and other relevant parties.
 
-The workflow for RFCs has undergone significant changes in late
-October 2016, so expect some turbulence while we sort through existing
-RFCs.
-
 ### RFC Workflow
 
 1. Create a new folder under `incoming/` directly on the `master` branch.
-    * Create a `README.md` in the folder for the RFC itself (see below for template).
+    * Create your RFC as `README.md` in the folder on `master`.
+        * A template is available below.
     * Supporting materials (typically diagrams) can be placed in the same folder.
     * See **Naming Folders** below.
-2. Push `master` to github.
+2. Push `master` to github. Keep editing directly on `master` until
+you're ready for discussion.
 3. Create a new branch.
     * Move the folder to the top level of the `rfc` repository.
     * Push the branch to github.
@@ -31,9 +29,9 @@ Future status updates should primarily be directed to Jira, but it is
 perfectly valid to add useful status information in `README` without a
 new pull request.
 
-Only open new pull requests against a merged RFC when extended
+Only open new pull requests against the merged RFC when extended
 commentary is useful/necessary. Otherwise, just change the document in
-place.
+place on `master`.
 
 #### Naming Folders
 
