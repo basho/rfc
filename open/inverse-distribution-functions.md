@@ -38,6 +38,38 @@ Inverse distribution functions are parsed to produce a tagged lexeme by the same
 
 The presence of `ORDER BY` will direct `riak_kv_qry_worker` to use query buffers for the query with inverse distribution functions.  Note that the ORDER BY spec will have the resulting buffer sorted by the column argument.
 
+By way of illustration:
+
+```
+                              <---Network--->
+
++ FROM     <-----------------------+        + FROM mytable on vnode X
+|                                  |        |
+| SELECT   PERCENTILE(Temp, 0.1)   |        | SELECT Temp
+|                                  | Chunk1 |
+| GROUP BY []                      +--------+ GROUP BY []
+|                                  |        |
+| ORDER BY []                      |        | ORDER BY Temp ASC NULLS LAST
+|                                  |        |
+| LIMIT    []                      |        | LIMIT 1
+|                                  |        |
+| OFFSET   []                      |        | OFFSET $TotalRows * 0.1
+|                                  |        |
++ WHERE    []                      |        + WHERE + start_key = {myfamily, myseries, 1233}
+                                   |                | end_key   = {myfamily, myseries, 4000}
+                                   |                + temp      > 18
+                                   |
+                                   . Chunk 2
+                                   . ------
+                                   .
+```
+
+Note that
+
+1. Presence of inverse distribution functions does not affect the compilation of WHERE clause and the breakdown of the query into subqueries.
+
+2. The substitution of `TotalRows` in OFFSET happens when the collection of selection rows is completed in the query buffers manager.  At compile time, `#riak_select_v3.'OFFSET'` will be set up with a list of functional objects, each taking `TotalRows` as a single argument and returning the effective OFFSET value, for every inverse distribution function appearing in the query.
+
 ### Compute offsets at fetch time
 
 On successful collection of all records, in `riak_kv_qry_buffers:fetch_limit`, we check whether the `Offset` parameter is a list of functions.  If it is, each function is called with the total number of rows as an argument, yielding the effective offset.  For each offset `N`, we extract the `N`th record from the buffer (either in-memory buffer or leveldb-backed one).  The values fetched are then placed on a list, and that list becomes the single row returned by `fetch_limit`.
