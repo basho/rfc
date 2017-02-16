@@ -84,7 +84,6 @@ object_v1 {
  version :: binary()
  data :: {key, RiakKey :: binary()}
 }
-```
 
 large_object_v1 {
  version :: binary()
