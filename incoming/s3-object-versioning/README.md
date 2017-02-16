@@ -23,7 +23,7 @@ The following APIs need to be implemented to support versioning of objects in [R
 
 ### Proposal
 
-[RIAK S3 API][2] stores an object by mapping a `{S3BucketName, Key}` pair to a `{{S3BucketName, <<"__s3_bucket__">>}, Key}`. Versioning is implemented by storing a manifest instead of the object at `{{S3BucketName, <<"__s3_bucket__">>}, Key}. The manifest is a data structure like
+[RIAK S3 API][2] stores an object by mapping a `{S3BucketName, Key}` pair to a `{{S3BucketName, <<"__s3_bucket__">>}, Key}`. Versioning is implemented by storing a manifest instead of the object at `{{S3BucketName, <<"__s3_bucket__">>}, Key}`. The manifest is a data structure like
 
 ```erlang
 manifest_v1 {
