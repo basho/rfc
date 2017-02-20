@@ -8,13 +8,7 @@ In Riak TS 1.4 character timestamps improved timestamp usability. These changes 
 
 ##### `now()` Function
 
-The `now()` functions return the node's local UTC time in milliseconds. It will be usable in the `VALUES` specification of `INSERT` statements.
-
-```sql
-INSERT INTO mytable VALUES (now());
-```
-
-And in `SELECT` statements' `WHERE` clause.
+The `now()` functions return the node's local UTC time in milliseconds. It will be usable in `SELECT` statements' `WHERE` clause.
 
 ```sql
 SELECT * FROM mytable
