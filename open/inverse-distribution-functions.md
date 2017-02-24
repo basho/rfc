@@ -43,28 +43,46 @@ The presence of `ORDER BY` will direct `riak_kv_qry_worker` to use query buffers
 By way of illustration:
 
 ```
-                              <---Network--->
+Coordinator            <---Network--->                 Vnodes
 
-+ FROM     Table <-----------------+        + FROM Table on vnode N1
-|                                  |        |
-| SELECT   INVDISTFUN(X, Param)    |        | SELECT X
-|                                  | Chunk1 |
-| GROUP BY []                      +--------+ GROUP BY []
-|                                  |        |
-| ORDER BY []                      |        | ORDER BY X ASC
-|                                  |        |
-| LIMIT    []                      |        | LIMIT 1
-|                                  |        |
-| OFFSET   []                      |        | OFFSET 'INVDISTFUN'([Param], RowsTotal, ValueAtF)
-|                                  |        |
-+ WHERE    []                      |        + WHERE + start_key, end_key and filters per
-                                   |                | normal compilation, ANDed with:
-                                   |                + X is not null
-                                   |
-                                   | Chunk 2
-                                   + ------> (same as for vnode N1)
-                                   .
-                                   .
+1. Query compiled into subqueries
+
++ FROM     Table ------- subqueries --+--------------> + FROM Table on vnode N1
+|                                     |                |
+| SELECT   INVDISTFUN(X, Param)       |                + WHERE + start_key, end_key and filters per
+|                                     |                        | normal compilation, ANDed with:
+| GROUP BY []                         |                        +  "X is not null"
+|                                     |
+| ORDER BY []                         |
+|                                     +--------------> + FROM Table on vnode N2
+| LIMIT    []                         |                |
+|                                     |                + WHERE ...
+| OFFSET   []                         |
+|                                     |
++ WHERE    []                         .
+                                      .
+                                      .
+2. Collection of chunks
+                                                    N1
+                                                    |    N2
+                                                    |    |
+         +------------------------- chunks -------- +----+-...
+         |
+         v
+
++ SELECT X
+|
+| ORDER BY X ASC
+|
+| LIMIT 1
+|
++ OFFSET 'INVDISTFUN'([Param], RowsTotal, ValueAtF)
+
+         |
+         v
+
+3. Result returned to client
+
 ```
 
 Notes:
