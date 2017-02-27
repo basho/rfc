@@ -43,46 +43,71 @@ The presence of `ORDER BY` will direct `riak_kv_qry_worker` to use query buffers
 By way of illustration:
 
 ```
-Coordinator            <---Network--->                 Vnodes
+     select median(bob) from mytable where id = 1 and time > 1 and time < 4000;
 
-1. Query compiled into subqueries
 
-+ FROM     Table ------- subqueries --+--------------> + FROM Table on vnode N1
-|                                     |                |
-| SELECT   INVDISTFUN(X, Param)       |                + WHERE + start_key, end_key and filters per
-|                                     |                        | normal compilation, ANDed with:
-| GROUP BY []                         |                        +  "X is not null"
-|                                     |
-| ORDER BY []                         |
-|                                     +--------------> + FROM Table on vnode N2
-| LIMIT    []                         |                |
-|                                     |                + WHERE ...
-| OFFSET   []                         |
-|                                     |
-+ WHERE    []                         .
-                                      .
-                                      .
-2. Collection of chunks
-                                                    N1
-                                                    |    N2
-                                                    |    |
-         +------------------------- chunks -------- +----+-...
-         |
-         v
 
-+ SELECT X
-|
-| ORDER BY X ASC
-|
-| LIMIT 1
-|
-+ OFFSET 'INVDISTFUN'([Param], RowsTotal, ValueAtF)
 
-         |
-         v
+        ◀ ─ Erlang Coordinator─ ─▶
+                                                                                             ◀─ ─ ─ ─ ─ ─ Network  ─ ─ ─ ▶
+                                                              Table on coordinator
+                                                            ◀ ─ EITHER in memory  ─ ─▶                                     ◀─ ─ ─ ─ ─ ─ LevelDB ─ ─ ─ ─ ─ ─ ─ ▶
+                                                                   OR leveldb
 
-3. Result returned to client
+                                                                                                                          ◆  FROM     table mytable on X
+                                                                                                                          │
+                                                                                                                          │
+                                                                                                                          │  SELECT   *
+                                                                                                                          │
+                                                                                                                          │
+   ◆  FROM    ◀═════════════════════════════════════════   ◆  FROM    ◀════════════════════════╦══════════════════════════│  GROUP BY [ ]
+   │                                                       │                                   ║                          │
+   │                                                       │                                   ║                          │
+   │  SELECT   [ median(bob) ]                             │  SELECT   [ bob AS median(bob) ]  ║                          │  ORDER BY [ ]
+   │                                                       │                                   ║                          │
+   │                                                       │                                   ║                          │
+   │  GROUP BY [ ]                                         │  GROUP BY [ ]                     ║                          │  LIMIT    [ ]
+   │                                                       │                                   ║                          │
+   │                                                       │                                   ║                          │
+   │  ORDER BY [ ]                                         │  ORDER BY [ bob ASC ]             ║                          │  OFFSET   [ ]
+   │                                                       │                                   ║                          │
+   │                                                       │                                   ║                          │
+   │  LIMIT    [ 1 ] (*)                                   │  LIMIT    [ ]                     ║                          ◆  WHERE     ◆ Start key = 1
+   │                                                       │                                   ║                                       │ End key   = 2000
+   │                                                       │                                   ║                                       │ id = 1
+   │  OFFSET   [ 'MEDIAN'([], RowsTotal, ValueAtF) ] (*)   │  OFFSET   [ ]                     ║                                       ◆ bob != NULL
+   │                                                       │                                   ║
+   │                                                       │                                   ║
+   ◆  WHERE    [ ]                                         ◆  WHERE    [ ]                     ║
+                                                                                               ║
+                                                                                               ║
+                                                                                               ║
+                                                                                               ║                          ◆  FROM     table mytable on Y
+                                                                                               ║                          │
+                                                                                               ║                          │
+                                                                                               ║                          │  SELECT   *
+                                                                                               ║                          │
+                                                                                               ║                          │
+                                                                                               ╚══════════════════════════│  GROUP BY [ ]
+                                                                                                                          │
+                                                                                                                          │
+                                                                                                                          │  ORDER BY [ ]
+                                                                                                                          │
+                                                                                                                          │
+                                                                                                                          │  LIMIT    [ ]
+                                                                                                                          │
+                                                                                                                          │
+                                                                                                                          │  OFFSET   [ ]
+                                                                                                                          │
+                                                                                                                          │
+                                                                                                                          ◆  WHERE     ◆ Start key = 2001
+                                                                                                                                       │ End key   = 4000
+                                                                                                                                       │ id = 1
+                                                                                                                                       ◆ bob != NULL
 
+(*) each entry in the list corresponds to the relevant element in
+    the a function call in the SELECT clause.  In total, there will be
+    as many entries in these lists as there are function calls.
 ```
 
 Notes:
