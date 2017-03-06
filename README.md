@@ -71,6 +71,14 @@ that need to be addressed when creating an RFC:
 
 <Discussion of the work being proposed>
 
+### Performance Considerations
+
+Will this change affect performance of an existing feature, or a new feature that is performance sensitive?
+
+What are the performance goals of the change? N requsts per second? Better resource (CPU, IO, locks) usage? Better than X DB?
+
+Requires performance testing? yes/no. Which parts are affected. If yes, the Performance Team will need to be notified in advance.
+
 ### References
 
 <Links to existing projects or source code; external references>
