@@ -26,18 +26,27 @@ The issues around inconsistent wall clock times are well documented by Basho. Si
 Simple arithmetic on dates to query a time range.
 
 ```sql
+CREATE TABLE GeoCheckin (
+region VARCHAR NOT NULL,
+state VARCHAR NOT NULL,
+time TIMESTAMP NOT NULL,
+weather VARCHAR NOT NULL,
+temperature DOUBLE,
+PRIMARY KEY ((region, state, QUANTUM(time, 15, 'm')), region, state, time)
+);
+
 -- query rows in the last 10 minutes
-SELECT * FROM mytable
-WHERE mytime >= now()-10m AND mytime <= now(); 
+SELECT * FROM GeoCheckin
+WHERE time >= now() - 10m AND time <= now(); 
 
 
 -- query rows between the node's current time and
 -- 10 minutes into the future
-SELECT * FROM mytable
-WHERE mytime >= now() AND mytime <= now()+10m; 
+SELECT * FROM GeoCheckin
+WHERE time >= now() AND time <= now() + 10m; 
 ```
 
-Supported operators will be '+', '-', '*' and '/' on data types `sint64`, `double` and `timestamp`.
+Supported operators are '+', '-', '*' and '/' on data types `sint64`, `double` and `timestamp`.
 
 Arithmetic will use functions in the `riak_ql_window_agg_fns` module, used in the `SELECT` clause and so share `NULL` handling behaviour. The differences are:
 * `double` values that are the result of an arithmetic operation on an `sint64` or `timestamp` column will be rounded to the nearest integer.
