@@ -5,19 +5,36 @@
 Allow rows to be grouped by time.
 
 ```sql
-SELECT COUNT(*)
-FROM mytable
-WHERE ts > 213423424 AND ts < 234234234
-GROUP BY time(ts, 1d);
+CREATE TABLE GeoCheckin (
+region VARCHAR NOT NULL,
+state VARCHAR NOT NULL,
+time TIMESTAMP NOT NULL,
+weather VARCHAR NOT NULL,
+temperature DOUBLE,
+PRIMARY KEY ((region, state, QUANTUM(time, 15, 'm')), region, state, time)
+);
 
-+------------------------+--------+
-|          time          |COUNT(*)|
-+------------------------+--------+
-|2016-12-22T00:00:00.000Z|   3    |
-|2016-12-23T00:00:00.000Z|   45   |
-|2016-12-24T00:00:00.000Z|   332  |
-|2016-12-25T00:00:00.000Z|  10023 |
-+------------------------+--------+
+INSERT INTO GeoCheckin VALUES
+    ('South Atlantic', 'South Carolina', '2017-03-12 08:05:51', 'hot', 70.2),
+    ('South Atlantic', 'South Carolina', '2017-03-12 08:05:52', 'hot', 70.2),
+    ('South Atlantic', 'South Carolina', '2017-03-12 08:05:53', 'hot', 70.2),
+    ('South Atlantic', 'South Carolina', '2017-03-12 08:05:54', 'hot', 70.2),
+    ('South Atlantic', 'South Carolina', '2017-03-12 08:05:55', 'hot', 70.2);
+
+SELECT time(time, 1s), count(*) FROM GeoCheckin
+WHERE region = 'South Atlantic' AND state = 'South Carolina'
+AND time >= '2017-03-12 08:05:51' AND time <= '2017-03-12 08:05:55'
+GROUP BY time(time, 1s);
+
++--------------------+--------+
+|  TIME(time, 1000)  |COUNT(*)|
++--------------------+--------+
+|2017-03-12T08:05:54Z|   1    |
+|2017-03-12T08:05:51Z|   1    |
+|2017-03-12T08:05:55Z|   1    |
+|2017-03-12T08:05:52Z|   1    |
+|2017-03-12T08:05:53Z|   1    |
++--------------------+--------+
 ```
 
 ### Background
