@@ -15,7 +15,7 @@ With the upcoming Sweeper changes to Riak KV 2.5, a user can set a per-object TT
 
 When data is deleted, it will leave a tombstone in the AAE hashtree so that the expired data isn't resurrected. The tombstones is swept away at a later date once all replicas have been deleted and tombstoned. This two stage expiry process helps to avoid resurrected objects while Riak interacts with AAE.
 
-The [TTL property](https://github.com/basho/riak_pb/blob/develop/src/riak_kv.proto#L237) on each object is an unsigned 32-bit integer that represents **seconds**, and it's value can range from **X** to **Y**.
+The [TTL property](https://github.com/basho/riak_pb/blob/develop/src/riak_kv.proto#L237) on each object is an unsigned 32-bit integer that represents **seconds**, and it's value can range from **0** (immediate expiry) to **2^32**.
 
 
 ##### 2\. LevelDB "Bucket" Expiry (KV EE and TS EE)
@@ -45,26 +45,35 @@ While Sweeper operates using scheduled folds across the data, TS's Expiry uses L
 
 LevelDB can also expire/delete data at either an object, or a whole LevelDB file level depending on the settings.
 
-
-
+The [current LevelDB expiry implementation and bucket type proposal](https://github.com/basho/leveldb/wiki/mv-bucket-expiry2#three-properties-three-names-each) uses different values and periods for the TTL on the object, and the TTL for the bucket property.  The object TTL uses a `uint64` that represents **milliseconds**, and the bucket property TTL uses a `string` that represents a shorthand time string. There is another intermediary setting that is for the `leveldb::ExpiryModuleOS` that uses minutes for it's ttl setting, the aptly named `expiry_minutes`.  
 
 ### Proposal
 
 Although the two Expiry strategies have the same end-goals, the process by which they do it is different. They overlap in the KV + LevelDB + EE configuration space, but elsewhere they are independent of each other.
 
-My minimum recommendation is to rename the bucket properties as such to avoid confusion, and to change the `leveldb_ttl` on the bucket properties from a `string` to a `unit64` type that represents **milliseconds** for consistency:
+###### Option 1 - Differentiate and regulate
+My minimum recommendation is to rename the bucket properties as following to avoid confusion, and to change the TTL's "type" in the API to a `uint32` type that represents  **seconds** for API consistency:
 
-| Product | Current Bucket Property Name | Proposed Bucket Property Name | Current Type | Proposed Type |
-| ------- | ------- | ------- | ------- | ------- |
-| Sweeper | `ttl` | `sweeper_ttl` | uint32 | uint32 |
-| LevelDB | `expiration` | `leveldb_expiration` | boolean | boolean |
-| LevelDB | `default_time_to_live` | `leveldb_ttl` | string | **uint64** |
-| LevelDB | `expiration_mode` | `leveldb_expiration_mode` | enum | enum |
+| Product | Current Bucket Property Name | Proposed Bucket Property Name | Current Type | Proposed Type | Current Quantum | Proposed Quantum |
+| - | - | - | - | - | - |
+| Sweeper | `ttl` | `sweeper_ttl` | uint32 | uint64 | minutes | **seconds** |
+| LevelDB | `expiration` | `leveldb_expiration` | boolean | boolean | | |
+| LevelDB | `default_time_to_live` | `leveldb_ttl` | string | **uint32** | milliseconds | **seconds** |
+| LevelDB | `expiration_mode` | `leveldb_expiration_mode` | enum | enum | | | |
 
+| Product | riak.conf Property Name | Current Type | Proposed Type |
+| - | - | - |
+| LevelDB | `leveldb.expiration` | ??? | **uint32 representing seconds** |
+
+There may be riak.conf changes for sweeper configuration, but I could not find any documentation.
+<br>
+<br>
+
+###### Option 2 - Combine
 Another (harder) option would be to combine the APIs, but this would necessitate rework on both ends.  A combined bucket properties API would then look like:
 
 | Product | Current Property Name | Combined Property Name |
-| ------- | ------- | ------- |
+| - | - | - |
 | Sweeper | `ttl` | `ttl` |
 | LevelDB | `expiration` | `expiration` |
 | LevelDB | `default_time_to_live` | `ttl` |
