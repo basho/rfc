@@ -29,3 +29,4 @@ The documents will be written bottom-up, from the metal format first and then ba
 ### Contents
 
 [On Disk Format](./on_disk_format.md)
+[Changes To The Helper Modules](./helper_modules.md)
