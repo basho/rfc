@@ -55,7 +55,7 @@ Although the two Expiry strategies have the same end-goals, the process by which
 My minimum recommendation is to rename the bucket properties as such to avoid confusion, and to change the `leveldb_ttl` on the bucket properties from a `string` to a `unit64` type that represents **milliseconds** for consistency:
 
 | Product | Current Bucket Property Name | Proposed Bucket Property Name | Current Type | Proposed Type |
-| - | - | - | - |
+| ------- | ------- | ------- | ------- | ------- |
 | Sweeper | `ttl` | `sweeper_ttl` | uint32 | uint32 |
 | LevelDB | `expiration` | `leveldb_expiration` | boolean | boolean |
 | LevelDB | `default_time_to_live` | `leveldb_ttl` | string | **uint64** |
@@ -64,7 +64,7 @@ My minimum recommendation is to rename the bucket properties as such to avoid co
 Another (harder) option would be to combine the APIs, but this would necessitate rework on both ends.  A combined bucket properties API would then look like:
 
 | Product | Current Property Name | Combined Property Name |
-| - | - | - |
+| ------- | ------- | ------- |
 | Sweeper | `ttl` | `ttl` |
 | LevelDB | `expiration` | `expiration` |
 | LevelDB | `default_time_to_live` | `ttl` |
