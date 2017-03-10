@@ -55,14 +55,14 @@ Although the two Expiry strategies have the same end-goals, the process by which
 My minimum recommendation is to rename the bucket properties as following to avoid confusion, and to change the TTL's "type" in the API to a `uint32` type that represents  **seconds** for API consistency:
 
 | Product | Current Bucket Property Name | Proposed Bucket Property Name | Current Type | Proposed Type | Current Quantum | Proposed Quantum |
-| - | - | - | - | - | - |
+| ---- | ---- | ---- | ---- | ---- | ---- |
 | Sweeper | `ttl` | `sweeper_ttl` | uint32 | uint64 | minutes | **seconds** |
 | LevelDB | `expiration` | `leveldb_expiration` | boolean | boolean | | |
 | LevelDB | `default_time_to_live` | `leveldb_ttl` | string | **uint32** | milliseconds | **seconds** |
 | LevelDB | `expiration_mode` | `leveldb_expiration_mode` | enum | enum | | | |
 
 | Product | riak.conf Property Name | Current Type | Proposed Type |
-| - | - | - |
+| ---- | ---- | ---- |
 | LevelDB | `leveldb.expiration` | ??? | **uint32 representing seconds** |
 
 There may be riak.conf changes for sweeper configuration, but I could not find any documentation.
