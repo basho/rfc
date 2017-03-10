@@ -13,7 +13,7 @@ In the upcoming releases of KV and TS we have different data expiry features bei
 
 With the upcoming Sweeper changes to Riak KV 2.5, a user can set a per-object TTL through object or bucket properties. Sweeper's expiry module can then check for expired data, and delete the objects whenever sweeps are done.  How often sweeps are done is controlled by the `obj_ttl.sweep_interval` riak.conf/cuttlefish property.
 
-When data is deleted, it will leave a tombstone in the AAE hashtree so that the expired data isn't resurrected. The tombstones is swept away at a later date once all replicas have been deleted and tombstoned. This two stage expiry process helps to avoid resurrected objects while Riak interacts with AAE.
+When data is deleted, it will leave a tombstone in the AAE hashtree so that the expired data isn't resurrected. The tombstones is swept away at a later date when next hashtree rebuild occurs. This two stage expiry process helps to avoid resurrected objects while Riak interacts with AAE.
 
 The [TTL property](https://github.com/basho/riak_pb/blob/develop/src/riak_kv.proto#L237) on each object is an unsigned 32-bit integer that represents **seconds**, and it's value can range from **0** (immediate expiry) to **2^32**.
 
