@@ -1,4 +1,4 @@
-# RFC: Combined TTL
+# RFC: TTL API Changes
 
 ### Abstract
 
@@ -11,9 +11,9 @@ In the upcoming releases of KV and TS we have different data expiry features bei
 
 ##### 1\. Riak KV Sweeper Expiry
 
-With the upcoming Sweeper changes to Riak KV 2.5, a user can set a per-object TTL through object or bucket properties. Sweeper's expiry module can then check for expired data, and delete the objects whenever sweeps are done (once a week usually).
+With the upcoming Sweeper changes to Riak KV 2.5, a user can set a per-object TTL through object or bucket properties. Sweeper's expiry module can then check for expired data, and delete the objects whenever sweeps are done.  How often sweeps are done is controlled by the `obj_ttl.sweep_interval` riak.conf/cuttlefish property.
 
-When data is deleted, it will leave a tombstone in the AAE hashtree so that the expired data isn't resurrected. The tombstones is swept away at a later date once all replicas have been deleted and tombstoned.
+When data is deleted, it will leave a tombstone in the AAE hashtree so that the expired data isn't resurrected. The tombstones is swept away at a later date once all replicas have been deleted and tombstoned. This two stage expiry process helps to avoid resurrected objects while Riak interacts with AAE.
 
 The [TTL property](https://github.com/basho/riak_pb/blob/develop/src/riak_kv.proto#L237) on each object is an unsigned 32-bit integer that represents **seconds**, and it's value can range from **X** to **Y**.
 
@@ -41,24 +41,25 @@ Notes:
  - Setting `expiration_mode` to `per_item` will require LevelDB to do a compaction on the data file to remove expired records.
 
 
-While Sweeper operates using scheduled folds across the data, TS's Expiry uses LevelDB to do expiry.
-LevelDB can expire/delete data at either an object, or whole LevelDB file level depending on the settings.
+While Sweeper operates using scheduled folds across the data, TS's Expiry uses LevelDB to do expiry. Tombstoning happens whenever someone requests expired data via Get or Query operations, and deletion occurs during regular compactions.
 
-** MVM -  What triggers deletion? **
+LevelDB can also expire/delete data at either an object, or a whole LevelDB file level depending on the settings.
+
+
 
 
 ### Proposal
 
 Although the two Expiry strategies have the same end-goals, the process by which they do it is different. They overlap in the KV + LevelDB + EE configuration space, but elsewhere they are independent of each other.
 
-My minimum recommendation is to rename the bucket properties as such to avoid confusion:
+My minimum recommendation is to rename the bucket properties as such to avoid confusion, and to change the `leveldb_ttl` on the bucket properties from a `string` to a `unit64` type that represents **milliseconds** for consistency:
 
-| Product | Current Property Name | Proposed Property Name |
-| - | - | - |
-| Sweeper | `ttl` | `sweeper_ttl` |
-| LevelDB | `expiration` | `leveldb_expiration` |
-| LevelDB | `default_time_to_live` | `leveldb_ttl` |
-| LevelDB | `expiration_mode` | `leveldb_expiration_mode` |
+| Product | Current Bucket Property Name | Proposed Bucket Property Name | Current Type | Proposed Type |
+| - | - | - | - |
+| Sweeper | `ttl` | `sweeper_ttl` | uint32 | uint32 |
+| LevelDB | `expiration` | `leveldb_expiration` | boolean | boolean |
+| LevelDB | `default_time_to_live` | `leveldb_ttl` | string | **uint64** |
+| LevelDB | `expiration_mode` | `leveldb_expiration_mode` | enum | enum |
 
 Another (harder) option would be to combine the APIs, but this would necessitate rework on both ends.  A combined bucket properties API would then look like:
 
@@ -71,7 +72,8 @@ Another (harder) option would be to combine the APIs, but this would necessitate
 
 Notes:
  - LevelDB's TTL time period setting changes from a string to an integer, which would change that setting in the other locations for LevelDB (see [LevelDB Expiry API](https://github.com/basho/leveldb/wiki/mv-bucket-expiry2#three-properties-three-names-each)). A value of `0` could be the new `unlimited`.  
- - We would need a new `sweeper` setting for the existing LevelDB `expiration_mode` enum for the overlap case. Sweeper would then need to check for this while sweeping.
+ - We would need a new `sweeper` value for the existing LevelDB `expiration_mode` enum for the overlap case. Sweeper would then need to check for this and for the `expiration` boolean before sweeping.
+ - We would also need to change the type of the TTL property on both ends to `uint64`.
 
 This second case is harder to do with the looming releases of KV and TS, but does result in a more straightforward and global API for global expiry.
 
