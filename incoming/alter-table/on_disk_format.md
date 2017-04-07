@@ -130,6 +130,10 @@ The third proposal for a compressed format builds on the Future Format 1 - it dr
 * the `index` here is shown schematically as `meta data` of the `riak_object` like the version number but that is up for discussion. The index **MUST** be available without unencoding the whole object because it would be more efficient for a filter to have a preliminary pass against the field index (`field6 = "bob"` can never match if the `index` doesn't contain `6` etc, etc)
 * the removal of non-quantised key terms as per Future Format 2 can also be effected here if appropriate
 
+## Future Format 4
+
+You will notice that we use double-keys on the old `{Bucket, BucketType}` model for TS. There being a one-to-one correspondence in TS this leads to redundancy. It could be removed.
+
 ## Leveldb and `ALTER TABLE`
 
 Let us discuss the seperation of concerns with regard to `Erlang` and `leveldb` for `ALTER TABLE`.
